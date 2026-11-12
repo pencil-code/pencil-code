@@ -5317,6 +5317,7 @@ end subroutine make_mixture_fraction
     call copy_addr(high_coeff_abs_max,p_par(46)) ! (nreactions)
     call copy_addr(troe_coeff_abs_max,p_par(47)) ! (nreactions)
     call copy_addr(a_k4_min,p_par(48)) ! (nreactions)
+    call copy_addr(ireac_co,p_par(49)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Chemistry

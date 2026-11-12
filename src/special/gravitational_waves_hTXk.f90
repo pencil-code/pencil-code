@@ -3644,6 +3644,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call keep_compiler_quiet(lno_transverse_part)
     call keep_compiler_quiet(aux_stress)
 
+    if (allocated(t_file)) call copy_addr(t_file,p_par(81)) ! (nt_file__mod__gravitational_waves_htxk)
     endsubroutine pushpars2c
 !***********************************************************************
 !***********************************************************************

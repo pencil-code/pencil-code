@@ -2369,6 +2369,8 @@ module Special
 
     call keep_compiler_quiet(lvariable_k)
 
+    call copy_addr(horizon_activator,p_par(67))
+    call copy_addr(lmode_activator,p_par(68)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !***********************************************************************

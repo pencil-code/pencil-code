@@ -12206,6 +12206,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call keep_compiler_quiet(brms_target)
     call keep_compiler_quiet(k1y_ff)
 
+    call copy_addr(j2m_all,p_par(300))
     endsubroutine pushpars2c
 !***********************************************************************
     subroutine calc_pencils_magnetic_fres(f,p)

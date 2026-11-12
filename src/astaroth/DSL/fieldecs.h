@@ -509,6 +509,41 @@ field_order(AC_idivdotw__mod__electroweaksu2 != 0 ? AC_idivdotw__mod__electrowea
 const Field3 F_DIVDOTW = {F_DIVDOTWX, F_DIVDOTWY, F_DIVDOTWZ}
 const Field3 F_DIVDOTVEC = {F_DIVDOTWX, F_DIVDOTWY, F_DIVDOTWZ}
 #endif
+field_order(AC_ijbt__mod__cdata-1) Field F_JBT
+field_order(AC_ij2t__mod__cdata-1) Field F_J2T
+#if Lmagnetic_MODULE
+field_order(AC_idiva__mod__magnetic-1) Field F_DIVA
+#endif
+field_order(AC_iuxb__mod__cdata != 0 ? AC_iuxb__mod__cdata+0-1 : -1) Field F_UXBX
+field_order(AC_iuxb__mod__cdata != 0 ? AC_iuxb__mod__cdata+1-1 : -1) Field F_UXBY
+field_order(AC_iuxb__mod__cdata != 0 ? AC_iuxb__mod__cdata+2-1 : -1) Field F_UXBZ
+const Field3 F_UXB = {F_UXBX, F_UXBY, F_UXBZ}
+const Field3 F_UXBVEC = {F_UXBX, F_UXBY, F_UXBZ}
+field_order(AC_iugb__mod__cdata != 0 ? AC_iugb__mod__cdata+0-1 : -1) Field F_UGBX
+field_order(AC_iugb__mod__cdata != 0 ? AC_iugb__mod__cdata+1-1 : -1) Field F_UGBY
+field_order(AC_iugb__mod__cdata != 0 ? AC_iugb__mod__cdata+2-1 : -1) Field F_UGBZ
+const Field3 F_UGB = {F_UGBX, F_UGBY, F_UGBZ}
+const Field3 F_UGBVEC = {F_UGBX, F_UGBY, F_UGBZ}
+field_order(AC_ibgu__mod__cdata != 0 ? AC_ibgu__mod__cdata+0-1 : -1) Field F_BGUX
+field_order(AC_ibgu__mod__cdata != 0 ? AC_ibgu__mod__cdata+1-1 : -1) Field F_BGUY
+field_order(AC_ibgu__mod__cdata != 0 ? AC_ibgu__mod__cdata+2-1 : -1) Field F_BGUZ
+const Field3 F_BGU = {F_BGUX, F_BGUY, F_BGUZ}
+const Field3 F_BGUVEC = {F_BGUX, F_BGUY, F_BGUZ}
+#if Lmagnetic_MODULE
+field_order(AC_icurlb__mod__magnetic != 0 ? AC_icurlb__mod__magnetic+0-1 : -1) Field F_CURLBX
+field_order(AC_icurlb__mod__magnetic != 0 ? AC_icurlb__mod__magnetic+1-1 : -1) Field F_CURLBY
+field_order(AC_icurlb__mod__magnetic != 0 ? AC_icurlb__mod__magnetic+2-1 : -1) Field F_CURLBZ
+const Field3 F_CURLB = {F_CURLBX, F_CURLBY, F_CURLBZ}
+const Field3 F_CURLBVEC = {F_CURLBX, F_CURLBY, F_CURLBZ}
+#endif
+field_order(AC_ibdivu__mod__cdata != 0 ? AC_ibdivu__mod__cdata+0-1 : -1) Field F_BDIVUX
+field_order(AC_ibdivu__mod__cdata != 0 ? AC_ibdivu__mod__cdata+1-1 : -1) Field F_BDIVUY
+field_order(AC_ibdivu__mod__cdata != 0 ? AC_ibdivu__mod__cdata+2-1 : -1) Field F_BDIVUZ
+const Field3 F_BDIVU = {F_BDIVUX, F_BDIVUY, F_BDIVUZ}
+const Field3 F_BDIVUVEC = {F_BDIVUX, F_BDIVUY, F_BDIVUZ}
+#if Lchemistry_simple_MODULE
+field_order(AC_ireac_co__mod__chemistry-1) Field F_REAC_CO
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 field_order(AC_ispecial__mod__debug_output_times != 0 ? AC_ispecial__mod__debug_output_times-1 : -1) Field F_SPECIAL

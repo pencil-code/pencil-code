@@ -330,6 +330,46 @@ real3 DF_DIVDOTW = value(F_DIVDOTW)
 #define DF_DIVDOTWY DF_DIVDOTW.y
 #define DF_DIVDOTWZ DF_DIVDOTW.z
 #endif
+real DF_JBT = value(F_JBT)
+real DF_J2T = value(F_J2T)
+#if Lmagnetic_MODULE
+real DF_DIVA = value(F_DIVA)
+#endif
+real3 DF_UXB = value(F_UXB)
+#define DF_IUXB__MOD__CDATA DF_UXB
+#define DF_UXBVEC DF_UXB
+#define DF_UXBX DF_UXB.x
+#define DF_UXBY DF_UXB.y
+#define DF_UXBZ DF_UXB.z
+real3 DF_UGB = value(F_UGB)
+#define DF_IUGB__MOD__CDATA DF_UGB
+#define DF_UGBVEC DF_UGB
+#define DF_UGBX DF_UGB.x
+#define DF_UGBY DF_UGB.y
+#define DF_UGBZ DF_UGB.z
+real3 DF_BGU = value(F_BGU)
+#define DF_IBGU__MOD__CDATA DF_BGU
+#define DF_BGUVEC DF_BGU
+#define DF_BGUX DF_BGU.x
+#define DF_BGUY DF_BGU.y
+#define DF_BGUZ DF_BGU.z
+#if Lmagnetic_MODULE
+real3 DF_CURLB = value(F_CURLB)
+#define DF_ICURLB__MOD__MAGNETIC DF_CURLB
+#define DF_CURLBVEC DF_CURLB
+#define DF_CURLBX DF_CURLB.x
+#define DF_CURLBY DF_CURLB.y
+#define DF_CURLBZ DF_CURLB.z
+#endif
+real3 DF_BDIVU = value(F_BDIVU)
+#define DF_IBDIVU__MOD__CDATA DF_BDIVU
+#define DF_BDIVUVEC DF_BDIVU
+#define DF_BDIVUX DF_BDIVU.x
+#define DF_BDIVUY DF_BDIVU.y
+#define DF_BDIVUZ DF_BDIVU.z
+#if Lchemistry_simple_MODULE
+real DF_REAC_CO = value(F_REAC_CO)
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 real DF_SPECIAL = rk_intermediate_split_first(F_SPECIAL,step_num)

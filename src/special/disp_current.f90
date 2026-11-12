@@ -2236,6 +2236,9 @@ module Special
       call copy_addr(idiag_GYrms,p_par(79)) ! int
       call copy_addr(idiag_psiYrms,p_par(80)) ! int
 
+    call copy_addr(idive,p_par(81)) ! int
+    call copy_addr(isige,p_par(82)) ! int
+    call copy_addr(isigb,p_par(83)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
