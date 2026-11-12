@@ -894,42 +894,43 @@ module Snapshot
 !  as an option (not the default), we add dt to the current time, so
 !  as to output at the correct time. At some point, we should actually
 !  make this the default.
+!  10-Oct-2026/Kishore: removed lspec_at_tplusdt as it is now obsolete;
+!  10-Oct-2026/Kishore: powersnap is now called in gen_output_before_timestep,
+!  10-Oct-2026/Kishore: and thus its outputs correspond to the current iteration.
 !
-      if (lspec_at_tplusdt) then
-        call update_snaptime(file,tspec_next,nspec,dspec,t+dt,lspec)
-      else
-        select case (trigger_spec)
-          case ('ascale')
-            t_trigger=ascale
-          case ('lnascale')
-            t_trigger=alog(ascale)
-          case ('redshift')
-            t_trigger=1./ascale-1.
-          case ('tphys')
-            t_trigger=tphys
-          case ('code_time')
-            t_trigger=real(t)
-          case default
-            call fatal_error('powersnap_prepare','no such trigger_spec='//trim(trigger_spec))
-        end select
+      select case (trigger_spec)
+        case ('ascale')
+          t_trigger=ascale
+        case ('lnascale')
+          t_trigger=alog(ascale)
+        case ('redshift')
+          t_trigger=1./ascale-1.
+        case ('tphys')
+          t_trigger=tphys
+        case ('code_time')
+          t_trigger=real(t)
+        case default
+          call fatal_error('powersnap_prepare','no such trigger_spec='//trim(trigger_spec))
+      end select
 !
 !  Use here the opportunity to set tspec_next. We did this only if the relevant
 !  t*.dat file did not yet exist. This is important if trigger_spec is not the code_time.
 !
-        if (lfirst_call) then
-          if (.not. existed) then
-            tspec_next = t_trigger
-            !tspec_next = -int(exp(.5*alog(huge1))/dspec)*dspec  !(AXEL)
-            !2026-Nov-12/Kishore: commented out below and restored above to fix power spectra output in the helical-MHDturb sample. Axel, please check.
-            !tspec_next = -int(100./dspec)*dspec  !(AXEL)
-            if (trigger_spec == 'code_time') then
-              tspec_next=tspec_next + dspec
-            endif
+      if (lfirst_call) then
+        if (.not. existed) then
+          tspec_next = t_trigger
+          !tspec_next = -int(exp(.5*alog(huge1))/dspec)*dspec  !(AXEL)
+          !2026-Nov-12/Kishore: commented out below and restored above to fix power spectra output in the helical-MHDturb sample. Axel, please check.
+          !tspec_next = -int(100./dspec)*dspec  !(AXEL)
+          if (trigger_spec == 'code_time') then
+            tspec_next=tspec_next + dspec
           endif
-          lfirst_call=.false.
         endif
-        call update_snaptime(file,tspec_next,nspec,dspec,real(t_trigger,kind=rkind8),lspec)
+        lfirst_call=.false.
       endif
+!
+      call update_snaptime(file,tspec_next,nspec,dspec,real(t_trigger,kind=rkind8),lspec)
+!
       if (lspec) tspec=t_trigger
 !
     endsubroutine powersnap_prepare
