@@ -3119,7 +3119,6 @@ module Radiation
     call copy_addr(rad2max,p_par(80))           ! int dconst
     call copy_addr(cdtradpress,p_par(81))
 
-    call copy_addr(cdtradpress,p_par(81))
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Radiation
