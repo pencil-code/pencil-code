@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import warnings
@@ -28,6 +29,7 @@ pytest_coverage_flags = [
     "--cov-append",
     "--script-test-coverage",
     ]
+status_icons_path = pathlib.Path(__file__).parent/"../../misc/icons"
 
 def call_pytest(fast=False):
     #Keep this import here so that call_tox works without pytest installed.
@@ -77,6 +79,9 @@ def call_tox(output_dir, report_coverage=True, fast=False):
     json_filename = output_dir/"report.json"
     html_filename = output_dir/"index.html"
     py_tests_dir = pathlib.Path(__file__).parent
+    result_icon_loc = output_dir/"result.svg"
+
+    shutil.copy(status_icons_path/"running.svg", result_icon_loc)
 
     if report_coverage:
         subprocess.run(["coverage", "erase"], check=True, cwd=py_tests_dir)
@@ -115,6 +120,12 @@ def call_tox(output_dir, report_coverage=True, fast=False):
         repo_info=get_repo_version(py_tests_dir),
         )
     print(f"Saved HTML test report in {html_filename}")
+
+    if p.returncode == 0:
+        shutil.copy(status_icons_path/"succeeded.svg", result_icon_loc)
+    else:
+        shutil.copy(status_icons_path/"failed.svg", result_icon_loc)
+
     sys.exit(p.returncode)
 
 _ansi_escape = re.compile(r'''
