@@ -49,7 +49,8 @@ module Special
 !
 ! input parameters
 !
-  integer :: iGammaW=0, iW0=0, irhoW=0
+  integer :: iGammaW=0
+  !integer :: irhoW=0,iW0=0
   integer :: idWW1=0, idWW2=0, idWW3=0, iWW1ddot=0, iWW2ddot=0
   integer :: iWW3ddot=0, idWW=0
   ! Wddot = d^2 W / dt^2 ~ dt E
@@ -216,7 +217,6 @@ module Special
       use FArrayManager
       use Sub, only: register_report_aux
       use SharedVariables, only: put_shared_variable
-      integer :: j
 !
 ! alberto: non-Abelian SU(2) (Wia) gauge fields in the W_0^i = 0 gauge
 !
@@ -365,7 +365,7 @@ module Special
       use Sub
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (nx) :: divW, divE
+      real, dimension (nx) :: divW 
       integer :: j, i
 !
 !
@@ -640,7 +640,7 @@ module Special
       real, dimension (nx) :: tmp0
 !
       ! real, dimension (nx) :: tmp
-      integer :: i,j,k
+      integer :: i,j
 !
 !
 !  Pencil for charge density.
@@ -1239,12 +1239,14 @@ module Special
       real, dimension(nx,3) :: gaussWd, constrainteqn
       ! real :: mfpf=0.,fppf=0.
       ! real, dimension(nx,3) :: gtmp
-      integer :: i,j
 
       ! call save_name(get_mfpf(),idiag_mfpf)
       ! call save_name(get_fppf(),idiag_fppf)
       ! call save_name(scl_factor_target,idiag_afact)
       ! if (idiag_EEEM/=0) call sum_mn_name(.5*(p%e2+p%b2),idiag_EEEM)
+
+      call keep_compiler_quiet(f)
+
       if (idiag_W1dotW1m /= 0) call sum_mn_name(p%W1dotW1,idiag_W1dotW1m)
       if (idiag_W2dotW2m /= 0) call sum_mn_name(p%W2dotW2,idiag_W2dotW2m)
       if (idiag_W3dotW3m /= 0) call sum_mn_name(p%W3dotW3,idiag_W3dotW3m)
@@ -1321,6 +1323,29 @@ module Special
         call calc_constrainteqn(p,gaussWd,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqnW)
       endif
+
+      if (l1davgfirst) then
+        call xysum_mn_name_z(p%W1(:,1),idiag_W1xmz)
+        call xysum_mn_name_z(p%W1(:,2),idiag_W1ymz)
+        call xysum_mn_name_z(p%W1(:,3),idiag_W1zmz)
+        call xysum_mn_name_z(p%W2(:,1),idiag_W2xmz)
+        call xysum_mn_name_z(p%W2(:,2),idiag_W2ymz)
+        call xysum_mn_name_z(p%W2(:,3),idiag_W2zmz)
+        call xysum_mn_name_z(p%W3(:,1),idiag_W3xmz)
+        call xysum_mn_name_z(p%W3(:,2),idiag_W3ymz)
+        call xysum_mn_name_z(p%W3(:,3),idiag_W3zmz)
+
+        call xysum_mn_name_z(p%dW1(:,1),idiag_dW1xmz)
+        call xysum_mn_name_z(p%dW1(:,2),idiag_dW1ymz)
+        call xysum_mn_name_z(p%dW1(:,3),idiag_dW1zmz)
+        call xysum_mn_name_z(p%dW2(:,1),idiag_dW2xmz)
+        call xysum_mn_name_z(p%dW2(:,2),idiag_dW2ymz)
+        call xysum_mn_name_z(p%dW2(:,3),idiag_dW2zmz)
+        call xysum_mn_name_z(p%dW3(:,1),idiag_dW3xmz)
+        call xysum_mn_name_z(p%dW3(:,2),idiag_dW3ymz)
+        call xysum_mn_name_z(p%dW3(:,3),idiag_dW3zmz)
+      endif
+
 
     endsubroutine calc_diagnostics_special
 !***********************************************************************
@@ -1431,11 +1456,26 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'psiWrms',idiag_psiWrms)
       enddo
 !
-      ! do inamez=1,nnamez
-      !   call parse_name(inamez,cnamez(inamez),cformz(inamez),'exmz',idiag_exmz)
-      !   call parse_name(inamez,cnamez(inamez),cformz(inamez),'eymz',idiag_eymz)
-      !   call parse_name(inamez,cnamez(inamez),cformz(inamez),'ezmz',idiag_ezmz)
-      ! enddo
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W1xmz',idiag_W1xmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W1ymz',idiag_W1ymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W1zmz',idiag_W1zmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W2xmz',idiag_W2xmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W2ymz',idiag_W2ymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W2zmz',idiag_W2zmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W3xmz',idiag_W3xmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W3ymz',idiag_W3ymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'W3zmz',idiag_W3zmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW1xmz',idiag_dW1xmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW1ymz',idiag_dW1ymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW1zmz',idiag_dW1zmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW2xmz',idiag_dW2xmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW2ymz',idiag_dW2ymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW2zmz',idiag_dW2zmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW3xmz',idiag_dW3xmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW3ymz',idiag_dW3ymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dW3zmz',idiag_dW3zmz)
+      enddo
 !
 !  check for those quantities for which we want video slices
 !
@@ -1465,7 +1505,6 @@ module Special
 !  06-jul-06/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (nx) :: tmp
 !
       call keep_compiler_quiet(f)
 !
@@ -1482,7 +1521,6 @@ module Special
       real, contiguous, dimension(:,:,:,:) :: f
       type(slice_data) :: slices
 !
-      integer :: inamev
 !
 !  Loop over slices
 !
@@ -1506,6 +1544,12 @@ module Special
 
     integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+      call keep_compiler_quiet(lskip_projection_ww)
+      call keep_compiler_quiet(initWW0)
+      call keep_compiler_quiet(initdWW0)
+      call keep_compiler_quiet(ampl_W0)
+      call keep_compiler_quiet(ampl_dW0)
 
       call copy_addr(llongitudinalW, p_par(1))    ! bool
       call copy_addr(eta_WW, p_par(2))

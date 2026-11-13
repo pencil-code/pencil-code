@@ -2453,9 +2453,9 @@ module Special
       do while(.not. found)
         call random_number_wrapper(u)
         idx = int(nwgrid*u)
-        ix = mod(idx,int(nxgrid,8))
-        iy = mod(idx/nxgrid,int(nygrid,8))
-        iz = idx/(nxgrid*nygrid)
+        ix = int(mod(idx,int(nxgrid,8)),4)
+        iy = int(mod(idx/nxgrid,int(nygrid,8)),4)
+        iz = int(idx/(nxgrid*nygrid),4)
 
         px = ix/nx
         py = iy/ny
@@ -2691,6 +2691,7 @@ module Special
       integer :: i
 
       call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(df)
       if (llast) then  
         zeta_sum = 0.
         do m=m1,m2

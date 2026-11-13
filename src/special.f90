@@ -864,6 +864,7 @@
       call keep_compiler_quiet(spec_hel)
       call keep_compiler_quiet(lfirstcall)
       call keep_compiler_quiet(len)
+      call keep_compiler_quiet(kind)
 !
     endsubroutine special_calc_spectra_byte
 !***********************************************************************
