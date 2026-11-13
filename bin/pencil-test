@@ -675,7 +675,10 @@ sub icon_write {
     if ($log_dir) { $svg = $log_dir."/".$svg; }
     if (!$force && (-e $svg)) {
         my $current_hash = `md5sum "$svg" | head -c 32`;
-        if ($current_hash ne $hourglass_hash) { return; }
+        if ($current_hash ne $hourglass_hash) {
+            #Avoid overwriting icon of scheduled test
+            return;
+            }
     }
     open (SVG, ">$svg") or die "Error while writing '$svg' file: $!\n";
     print SVG $icon;
