@@ -4819,9 +4819,11 @@ subroutine dot_mn_sv_pencil(a,b,c)
       character (len=*) :: varname_input
       integer :: idx
 !
-      write(*,'(A,A10,",  x: <",A8,">, y: <",A8,">,  z: <",A8,">")') &
-           'Bcs for ', varname_input, &
-           trim(bcx(idx)), trim(bcy(idx)), trim(bcz(idx))
+      if(idx /= 0) then
+        write(*,'(A,A10,",  x: <",A8,">, y: <",A8,">,  z: <",A8,">")') &
+             'Bcs for ', varname_input, &
+             trim(bcx(idx)), trim(bcy(idx)), trim(bcz(idx))
+      endif
 !
     endsubroutine identify_bcs
 !***********************************************************************
