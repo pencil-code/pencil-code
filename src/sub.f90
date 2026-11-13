@@ -1636,6 +1636,8 @@ subroutine dot_mn_sv_pencil(a,b,c)
     subroutine gij(f,k,g,nder,ignoredx)
 !
 !  Calculate gradient of a vector, return matrix.
+!  Note that this does not include the correction terms for non-cartesian
+!  coordinates.
 !
 !   3-apr-01/axel+gitta: coded
 !
