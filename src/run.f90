@@ -968,6 +968,24 @@ endsubroutine helper_loop
 
 !$ endsubroutine get_core_ids_excluding_the_master
 !***********************************************************************
+   subroutine check_for_cmd_arguments
+!  13-Nov-26/TP: Coded. Can pass nt as a cmd argument to run.x
+     use General, only: atoi 
+     use Messages, only: fatal_error
+     integer :: n
+     character(len=256) :: arg
+
+     n = command_argument_count()
+     if(n == 0) return
+
+     if (n == 1) then
+        call get_command_argument(1, arg)
+        nt = atoi(arg)
+     else
+       call fatal_error('check_for_cmd_arguments','Only a single cmdline argument is supported at the moment!')
+     endif
+   endsubroutine check_for_cmd_arguments
+!***********************************************************************
   subroutine run_start() bind(C)
 !
 !  8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
@@ -1458,6 +1476,7 @@ endsubroutine helper_loop
 !
   call trim_averages
 
+  call check_for_cmd_arguments
 !$ call get_all_core_ids
 
 !  Here we start a paralle section with 2 threads so we can split them into the

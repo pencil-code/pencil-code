@@ -65,6 +65,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                   &run_pars.lpencil_check.
 #   -q, --quiet     Be quiet.
 #   -o, --exec-opts User execution options.
+#   --run-args      Cmdline arguments passed to start.x or run.x
 #   -v, --version   Print version number.
 #       --last      Return the dates+paths of the last runs by 'tailing'
 #                   the $PENCIL_HOME/.run_directories.log file.
@@ -138,6 +139,7 @@ GetOptions(\%opts,
                     --notify
                -q   --quiet
                -o=s --exec-opts=s
+                    --run-args=s
                -v   --version
                     --last
                -l   --log
@@ -324,7 +326,8 @@ sub start_cmd {
 
     get_lock();
     clear_completed();
-    mpi_run_cmd($start_x);
+    my @run_args = split('\s+', $opts{'run-args'} // '');
+    mpi_run_cmd($start_x,@run_args);
     clear_lock();
 
     handle_copy_snapshots('copy-snapshots-start.log');
@@ -346,7 +349,8 @@ sub run_cmd {
 
     get_lock();
     clear_completed();
-    mpi_run_cmd($run_x);
+    my @run_args = split('\s+', $opts{'run-args'} // '');
+    mpi_run_cmd($run_x,@run_args);
     clear_lock();
 
     run_system_cmd_recoverably('pc_deprecated_slice_links');
