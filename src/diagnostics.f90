@@ -539,11 +539,10 @@ module Diagnostics
 !
       character, parameter:: comma=','
       character(len=256)  :: tform
-      character(len=32)   :: cform_loc,cform_ext
-      integer             :: iname,index_i,index_d,length,iname_loc
+      character(len=32)   :: cform_loc,cform_ext,tail
+      integer             :: iname,index_i,index_d,index_c,length,iname_loc
       logical             :: lcompl
-      real                :: rlength,dlength
-      integer             :: dlength2,lenrank,lenloc
+      integer             :: dlength,flength,mlength,nlength,dlength2,lenrank,lenloc
       character(len=4), dimension(4) :: addtexts
       integer, dimension(4) :: addlengths
 !
@@ -603,23 +602,27 @@ module Diagnostics
             else
               if (fname(iname)/=0.) then
 !
-!  Check output item for fixed-point formats.
+!  Check output item for fixed-point formats: would it fit into the format?
+!  If not, extend the format.
 !
                 index_i=scan(cform(iname),'fF')
+                index_c=scan(cform(iname),',')
                 if (index_i>0) then
-                  read(cform(iname)(index_i+1:),*) rlength
-                  dlength=floor(alog10(abs(fname(iname))))+2 - rlength
-                  if (dlength > 0) then
-                    index_d=index(cform(iname),'.')
-                    length=len(trim(cform(iname)))
-                    dlength2=floor(alog10(rlength+dlength))+1-(length-index_i-2)
-                    if (dlength2>0) then
-                      length=length+dlength2
-                      index_d=min(length,index_d+dlength2)
+                  index_d = index(cform(iname),'.')
+                  read(cform(iname)(index_i+1:index_d-1),*) flength   ! full length of the data field
+                  read(cform(iname)(index_d+1:),*) mlength            ! number of post-comma digits
+                  nlength = flength - 2 - mlength                     ! now biggest possible number of pre-comma digits (-2: comma & sign!)
+                  dlength=ceiling(alog10(abs(fname(iname))))          ! needed number of pre-comma digits
+                  if (dlength > nlength) then                         ! no fit into format
+                    if (dlength>=flength-1) then
+                      flength = dlength+1                             ! +1 for sign
+                      mlength = 0                                     ! no post-comma digits
+                    else
+                      mlength = mlength - (dlength-nlength)           ! reduce no. of post-comma digits
                     endif
-                    write(cform(iname)(index_i+1:), &
-                      '(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') &
-                      rlength+dlength
+                    if (mlength==0) flength=flength+1
+                    tail=merge(cform(iname)(index_c:),'',index_c>0)   ! all what comes behind the format proper: keep it
+                    cform(iname)(index_i+1:) = trim(itoa(flength))//'.'//trim(itoa(mlength))//trim(tail)
                   endif
                 endif
               endif
@@ -2194,7 +2197,6 @@ module Diagnostics
           lmask=.true.
         endif
 !
-!
 !  Set fraction if old and new stuff.
 !
         if (present(ipart)) then
@@ -2947,6 +2949,7 @@ module Diagnostics
 !  over x, that would simply cancel out when the final normalization is
 !  performed in yaverages_xz, and so we simply drop the factor of x in
 !  both the places.
+!
       fnamexz(:,nl,iname) = fnamexz(:,nl,iname)+a
 !
     endsubroutine ysum_mn_name_xz_npar
@@ -3260,7 +3263,7 @@ module Diagnostics
 !
 !  Add to the dst on the master thread
 !
-    if(lcalculating_phiavg_norm) p_phiavg_norm = p_phiavg_norm + phiavg_norm
+    if (lcalculating_phiavg_norm) p_phiavg_norm = p_phiavg_norm + phiavg_norm
 !
     endsubroutine diagnostics_diag_reductions
 !***********************************************************************
@@ -3411,10 +3414,10 @@ module Diagnostics
 !
 !   22-mar-25/TP: coded
 !
-        integer, intent(in) :: nnamel
-        integer :: ierr
-        allocate(fname_sound(ncoords_sound,nnamel),stat=ierr)
-        fname_sound = 0.0
+      integer, intent(in) :: nnamel
+      integer :: ierr
+      allocate(fname_sound(ncoords_sound,nnamel),stat=ierr)
+      fname_sound = 0.0
 
     endsubroutine allocate_sound_data
 !***********************************************************************
@@ -4152,7 +4155,7 @@ module Diagnostics
 
     endsubroutine free_thread_diagnostic_arrays
 !***********************************************************************
-    subroutine calc_nnames()
+    subroutine calc_nnames
 !
 !  Calculates the sizes of diagnostic arrays
 !  21-mar-25/TP: carved out from rprint_list
@@ -4194,7 +4197,7 @@ module Diagnostics
 
     endsubroutine calc_nnames
 !***********************************************************************
-    subroutine allocate_diagnostic_names()
+    subroutine allocate_diagnostic_names
 !
 !  Allocates diagnostic arrays holding the names of the diagnostic outputs
 !  Separate from the data allocations because of multithreading concerns
