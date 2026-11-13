@@ -459,6 +459,8 @@ module Hydro
   integer :: idiag_fpresrms=0   ! DIAG_DOC: 
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_umin=0       ! DIAG_DOC: $\min(|\uv|)$
+  integer :: idiag_umax_loc=0   ! DIAG_DOC: $\max(|\uv|)$
+  integer :: idiag_umin_loc=0   ! DIAG_DOC: $\min(|\uv|)$
   integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
   integer :: idiag_uyrms=0      ! DIAG_DOC: $\left<u_y^2\right>^{1/2}$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
@@ -4854,8 +4856,8 @@ module Hydro
         endif
         if (idiag_urmsx/=0) call sum_mn_name(p%u2*xmask_hyd,idiag_urmsx,lsqrt=.true.)
         if (idiag_urmsz/=0) call sum_mn_name(p%u2*zmask_hyd(n-n1+1),idiag_urmsz,lsqrt=.true.)
-        call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
-        if (idiag_umin /=0) call max_mn_name(-sqrt(p%u2),idiag_umin,lneg=.true.)
+        call max_mn_name(p%u2,idiag_umax,lsqrt=.true.,iname_loc=idiag_umax_loc)
+        if (idiag_umin /=0) call max_mn_name(-sqrt(p%u2),idiag_umin,lneg=.true.,iname_loc=idiag_umin_loc)
         if (idiag_uxrms/=0) call sum_mn_name(p%uu(:,1)**2,idiag_uxrms,lsqrt=.true.)
         if (idiag_uyrms/=0) call sum_mn_name(p%uu(:,2)**2,idiag_uyrms,lsqrt=.true.)
         if (idiag_uzrms/=0) call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
@@ -7916,6 +7918,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'urmss',idiag_urmss)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
         call parse_name(iname,cname(iname),cform(iname),'umin',idiag_umin)
+        call parse_name(iname,cname(iname),cform(iname),'umax_loc',idiag_umax_loc)
+        call parse_name(iname,cname(iname),cform(iname),'umin_loc',idiag_umin_loc)
         call parse_name(iname,cname(iname),cform(iname),'uxmin',idiag_uxmin)
         call parse_name(iname,cname(iname),cform(iname),'uymin',idiag_uymin)
         call parse_name(iname,cname(iname),cform(iname),'uzmin',idiag_uzmin)
