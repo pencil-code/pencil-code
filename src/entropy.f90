@@ -357,8 +357,8 @@ module Energy
   integer :: idiag_gTmax=0      ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_ssmax=0      ! DIAG_DOC: $s_{\max}$
   integer :: idiag_ssmin=0      ! DIAG_DOC: $s_{\min}$
-  integer :: idiag_ssmax_loc=0  ! DIAG_DOC: $s_{\max}$
-  integer :: idiag_ssmin_loc=0  ! DIAG_DOC: $s_{\min}$
+  integer :: idiag_ssmaxloc=0   ! DIAG_DOC: location of $s_{\max}$
+  integer :: idiag_ssminloc=0   ! DIAG_DOC: location of $s_{\min}$
   integer :: idiag_gTrms=0      ! DIAG_DOC: $(\nabla T)_{\rm rms}$
   integer :: idiag_gsrms=0      ! DIAG_DOC: $(\nabla s)_{\rm rms}$
   integer :: idiag_gTxgsrms=0   ! DIAG_DOC: $(\nabla T\times\nabla s)_{\rm rms}$
@@ -3962,8 +3962,8 @@ module Energy
             call max_mn_name(Hmax/p%ee,idiag_tauhmin,lreciprocal=.true.)
           endif
         endif
-        if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax,iname_loc=idiag_ssmax_loc)
-        if (idiag_ssmin/=0) call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.,iname_loc=idiag_ssmin_loc)
+        if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax,iname_loc=idiag_ssmaxloc)
+        if (idiag_ssmin/=0) call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.,iname_loc=idiag_ssminloc)
         if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax,iname_loc=idiag_TTmaxloc)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.,iname_loc=idiag_TTminloc)
         if (idiag_gTmax/=0) then
@@ -7464,8 +7464,8 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'ssmin',idiag_ssmin)
         call parse_name(iname,cname(iname),cform(iname),'ssmax',idiag_ssmax)
-        call parse_name(iname,cname(iname),cform(iname),'ssmin_loc',idiag_ssmin_loc)
-        call parse_name(iname,cname(iname),cform(iname),'ssmax_loc',idiag_ssmax_loc)
+        call parse_name(iname,cname(iname),cform(iname),'ssminloc',idiag_ssminloc)
+        call parse_name(iname,cname(iname),cform(iname),'ssmaxloc',idiag_ssmaxloc)
         call parse_name(iname,cname(iname),cform(iname),'gTrms',idiag_gTrms)
         call parse_name(iname,cname(iname),cform(iname),'gsrms',idiag_gsrms)
         call parse_name(iname,cname(iname),cform(iname),'gTxgsrms',idiag_gTxgsrms)
@@ -7487,6 +7487,8 @@ module Energy
 !
       if (idiag_TTmaxloc/=0.and.idiag_TTmax==0) idiag_TTmax=idiag_TTmaxloc
       if (idiag_TTminloc/=0.and.idiag_TTmin==0) idiag_TTmin=idiag_TTminloc
+      if (idiag_ssmaxloc/=0.and.idiag_ssmax==0) idiag_ssmax=idiag_ssmaxloc
+      if (idiag_ssminloc/=0.and.idiag_ssmin==0) idiag_ssmin=idiag_ssminloc
 !
 !  Check for those quantities for which we want yz-averages.
 !
