@@ -7386,8 +7386,8 @@ module Hydro
         idiag_urmsz=0
         idiag_umax=0
         idiag_umin=0
-        idiag_umax_loc=0
-        idiag_umin_loc=0
+        idiag_umaxloc=0
+        idiag_uminloc=0
         idiag_uxrms=0
         idiag_uyrms=0
         idiag_uzrms=0
@@ -8118,8 +8118,8 @@ module Hydro
 !
 !  Enable extrema value output if only location is requested.
 !
-      if (idiag_umax_loc/=0.and.idiag_umax==0) idiag_umax=idiag_umax_loc
-      if (idiag_umin_loc/=0.and.idiag_umin==0) idiag_umin=idiag_umin_loc
+      if (idiag_umaxloc/=0.and.idiag_umax==0) idiag_umax=idiag_umaxloc
+      if (idiag_uminloc/=0.and.idiag_umin==0) idiag_umin=idiag_uminloc
 
       if (idiag_fpresmaxloc/=0.and.idiag_fpresmax==0) idiag_fpresmax=idiag_fpresmaxloc
       if (idiag_fpresminloc/=0.and.idiag_fpresmin==0) idiag_fpresmin=idiag_fpresminloc
