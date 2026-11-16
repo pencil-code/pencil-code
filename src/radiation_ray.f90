@@ -2618,6 +2618,7 @@ module Radiation
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
         if (ltemperature) lpenc_requested(i_cv1)=.true.
+        if (idiag_crad>0) lpenc_requested(i_rho1)=.true.
       endif
 !
     endsubroutine pencil_criteria_radiation
@@ -2685,7 +2686,7 @@ module Radiation
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nx) :: Qrad2
+      real, dimension (nx) :: Qrad2, crad
       type (pencil_case) :: p
 !
       if (ldiagnos) then
@@ -2709,7 +2710,10 @@ module Radiation
 !
 !  crad for viscosity
 !
-        call sum_mn_name(fourthird*p%rho1*Srad(l1:l2,m,n)/c_light,idiag_crad,lsqrt=.true.)
+        if (idiag_crad>0) then
+          crad=fourthird*p%rho1*Srad(l1:l2,m,n)/c_light
+          call sum_mn_name(crad,idiag_crad,lsqrt=.true.)
+        endif
 !
 !  Here we divide again by kapparho, so we get actual Frad.
 !
