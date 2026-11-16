@@ -271,7 +271,7 @@ module Hydro
 ! Parameters for the background profile
   character (len=labellen) :: uuprof='nothing'
   logical :: lub_x=.false., lub_y=.false., lub_z=.false.
-  real :: vertical_gradient=0
+  real :: vertical_gradient=0, smix_uu=0.
   real, dimension(nx,3) :: ubgu=0, ugub=0
   real, dimension(nx,3,3) :: ubij=0
 !
@@ -301,7 +301,8 @@ module Hydro
       llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
       qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter,&
-      uuprof, vertical_gradient, lism_rotation, Omega, lu_background, lism_rotation
+      uuprof, vertical_gradient, lism_rotation, Omega, lu_background, lism_rotation, &
+      smix_uu
 !
 !  Run parameters.
 !
@@ -2167,7 +2168,7 @@ module Hydro
         case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
         case ('rotated_robertsflow'); call rotated_robertsflow(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
         case ('cyl_rot_strain'); call cyl_rot_strain(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j), &
-          FLOW=robflow_uu(j),INIT_THE=init_the_uu,INIT_PHI=init_phi_uu)
+          FLOW=robflow_uu(j),INIT_THE=init_the_uu,INIT_PHI=init_phi_uu,SMIX=smix_uu)
         case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuy,Lxyz)
         case ('meri_circ'); call meri_circ(f)
         case ('geostrophic'); call geostrophic(f)

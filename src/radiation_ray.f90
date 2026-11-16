@@ -149,6 +149,7 @@ module Radiation
   integer :: idiag_Qradrms=0, idiag_Qradmax=0
   integer :: idiag_Fradzm=0, idiag_kapparhom=0, idiag_Sradm=0
   integer :: idiag_Fradzmz=0, idiag_kapparhomz=0, idiag_taumz=0
+  integer :: idiag_crad=0
   integer :: idiag_dtchi=0, idiag_dtrad=0
   integer :: ivid_Jrad=0, ivid_Isurf=0
 !
@@ -2674,17 +2675,18 @@ module Radiation
       call radiative_cooling(f,df,p)
       call radiative_pressure(f,df,p)
 !
-      call calc_diagnostics_radiation(f)
+      call calc_diagnostics_radiation(f,p)
 !
     endsubroutine dradiation_dt
 !***********************************************************************
-    subroutine calc_diagnostics_radiation(f)
+    subroutine calc_diagnostics_radiation(f,p)
 
       use Diagnostics
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: Qrad2
+      type (pencil_case) :: p
 !
       if (ldiagnos) then
 
@@ -2704,6 +2706,10 @@ module Radiation
           call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
           call max_mn_name(Qrad2,idiag_Qradmax,lsqrt=.true.)
         endif
+!
+!  crad for viscosity
+!
+        call sum_mn_name(fourthird*p%rho1*Srad(l1:l2,m,n)/c_light,idiag_crad,lsqrt=.true.)
 !
 !  Here we divide again by kapparho, so we get actual Frad.
 !
@@ -2789,6 +2795,7 @@ module Radiation
       if (lreset) then
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_kapparhom=0; idiag_Sradm=0
         idiag_Fradzmz=0; idiag_kapparhomz=0; idiag_taumz=0
+        idiag_crad=0
         idiag_dtchi=0; idiag_dtrad=0
         ivid_Jrad=0; ivid_Isurf=0
       endif
@@ -2801,6 +2808,7 @@ module Radiation
         call parse_name(iname,cname(iname),cform(iname),'Fradzm',idiag_Fradzm)
         call parse_name(iname,cname(iname),cform(iname),'kapparhom',idiag_kapparhom)
         call parse_name(iname,cname(iname),cform(iname),'Sradm',idiag_Sradm)
+        call parse_name(iname,cname(iname),cform(iname),'crad',idiag_crad)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
       enddo

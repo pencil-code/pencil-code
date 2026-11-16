@@ -2771,18 +2771,18 @@ module Initcond
 !
     endsubroutine rotated_robertsflow
 !***********************************************************************
-    subroutine cyl_rot_strain(ampl,f,i,relhel,kx,flow,init_the,init_phi)
+    subroutine cyl_rot_strain(ampl,f,i,relhel,kx,flow,init_the,init_phi,smix)
 !
 !  cyl_rot_strain
 !
 !  11-aug-26/axel: coded
 !
       integer :: i,j
-      real, dimension(:,:,:), allocatable :: xx, yy, rr, cosr, mask
+      real, dimension(:,:,:), allocatable :: xx, yy, zz, rr, cosr, mask
       real, contiguous, dimension(:,:,:,:) :: f
-      real :: ampl, k=1., fac1, fac2, relhel, init_the1, init_phi1
-      real :: cthe, sthe, cphi, sphi
-      real, optional :: kx, init_the, init_phi
+      real :: ampl, k=1., fac1, fac2, relhel, init_the1, init_phi1, smix1
+      real :: cthe, sthe, cphi, sphi, norm
+      real, optional :: kx, init_the, init_phi, smix
       character (len=labellen) :: flowtype='I'
       character (len=labellen), optional :: flow
 !
@@ -2790,6 +2790,14 @@ module Initcond
 !
       if (present(kx)) then
         k=kx
+      endif
+!
+!  Possibility of changing the mixing ratio
+!
+      if (present(smix)) then
+        smix1=smix
+      else
+        smix1=0.
       endif
 !
 !  Possibility of changing the the angle init_the
@@ -2816,9 +2824,10 @@ module Initcond
 !
 !  prepare coefficients
 !
-      allocate(xx(mx,my,mz),yy(mx,my,mz),rr(mx,my,mz),cosr(mx,my,mz),mask(mx,my,mz))
+      allocate(xx(mx,my,mz),yy(mx,my,mz),zz(mx,my,mz),rr(mx,my,mz),cosr(mx,my,mz),mask(mx,my,mz))
       xx=spread(spread(k*x,2,my),3,mz)
       yy=spread(spread(k*y,1,mx),3,mz)
+      zz=spread(spread(k*z,1,mx),2,my)
       rr=sqrt(xx**2+yy**2)
 !
 !  Divide by r, because we want to multiply by x/r and y/r, respectively.
@@ -2851,8 +2860,10 @@ module Initcond
         sthe=sin(dtor*init_the1)
         cphi=cos(dtor*init_phi1)
         sphi=sin(dtor*init_phi1)
-        j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
-        j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
+        norm=1./sqrt(1.+(cthe+sthe)**2)
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)+norm*mask*(sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+norm*mask*(sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)-norm*mask*sphi*(sthe+cthe)*zz*smix1
 !
 !  In the following, relhel corresponds to theta*pi/2, and fac1 and fac2 are their cosine and sine values.
 !  In units of pi
