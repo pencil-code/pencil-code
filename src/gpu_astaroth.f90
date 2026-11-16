@@ -70,6 +70,9 @@ module GPU
   !PAR-DOC: than the negligible amount of round-off.
   !PAR-DOC: Anyways one is supposed to be able to turn it off for testing.
   !MR: Why is single for dt relevant?
+  !TP: Do you mean why is it useful to calculate it in single-precision?
+  !    It is because then we write less data out of the kernels, have less data in working memory and less data to finally reduce
+  !TP: We can do it for dt since dt is anyways not accurate up to 8 digits.
 
   logical :: lac_sparse_autotuning=.true.
   !PAR-DOC: Astaroth empirically finds the best configuration parameters of the kernels by running them with different 
