@@ -9,4 +9,5 @@
 	lonly_default_stream_for_taskgraphs=T
 	!Force sparse autotuning always
 	lac_sparse_autotuning_always=T
+        loutput_config_on_GPU=F
 /

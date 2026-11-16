@@ -3403,6 +3403,12 @@ void ac_compile()
   }
 }
 /***********************************************************************************************/
+void
+store_config(const AcMeshInfo& config)
+{
+	if(loutput_config_on_gpu__mod__gpu) acStoreConfig(config,"PC-AC.conf");
+}
+/***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 				int lread_all_vars_from_device_,
 				int lcpu_timestep_on_gpu_,
@@ -3427,7 +3433,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   const bool inside_container = ltraining;
   if (!inside_container) generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
-  acStoreConfig(mesh.info, "PC-AC.conf");
+  store_config(mesh.info);
   ac_compile();
   acLoadLibrary(mesh.info);
   acCheckDeviceAvailability();
@@ -3577,7 +3583,7 @@ extern "C" void reloadConfig()
   //The device arrays have been recreated (or reset from the config)
   if (particles_gpu.on) particles_load_to_device();
 #endif
-  acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
+  store_config(acDeviceGetLocalConfig(acGridGetDevice()));
   acLogFromRootProc(rank, "DONE reloading on GPU\n");
   fflush(stdout);
   fflush(stderr);

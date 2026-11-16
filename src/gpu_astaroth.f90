@@ -110,10 +110,15 @@ module GPU
   !PAR-DOC: Saves memory at the potential cost of performance by not creating streams,
   !PAR-DOC: which take surprisingly large amount of memory. Mainly needed for the autotest in norlx51
 
+  logical :: loutput_config_on_GPU = .true.
+  !PAR_DOC: Whether to write the config variables passed to the GPU. 
+  !PAR_DOC: Useful for debugging purposes.
+
   namelist /gpu_run_pars/ &
      ltest_bcs,lac_sparse_autotuning,lac_sparse_autotuning_always, &
      lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu, &
-     lread_all_vars_from_device,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs
+     lread_all_vars_from_device,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs,&
+     loutput_config_on_GPU
 
 contains
 !***********************************************************************
@@ -536,11 +541,12 @@ contains
     integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(lcumulative_df_on_gpu,p_par(4)) ! bool
-    call copy_addr(ltest_bcs,p_par(7)) ! bool
-    call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
-    call copy_addr(thread_block_loop_factors,p_par(9)) ! int3 dconst
-    call copy_addr(lonly_default_stream_for_taskgraphs,p_par(10)) ! bool dconst
+    call copy_addr(lcumulative_df_on_gpu,p_par(1)) ! bool
+    call copy_addr(ltest_bcs,p_par(2)) ! bool
+    call copy_addr(lsingle_precision_timestep,p_par(3)) ! bool
+    call copy_addr(thread_block_loop_factors,p_par(4)) ! int3 dconst
+    call copy_addr(lonly_default_stream_for_taskgraphs,p_par(5)) ! bool dconst
+    call copy_addr(loutput_config_on_GPU,p_par(6)) ! bool dconst
 
     endsubroutine pushpars2c
 !**************************************************************************
