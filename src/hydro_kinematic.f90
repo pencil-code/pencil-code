@@ -1349,6 +1349,16 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  Flow for Smith-Hutton test problem
+!  http://dx.doi.org/10.1080/10407788208913458
+!
+      case ('Smith-Hutton')
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1) = 2*y(m)*(1 - x(l1:l2)**2)
+          p%uu(:,2) = - 2*x(l1:l2)*(1 - y(m)**2)
+          p%uu(:,3) = 0
+        endif
+!
 !  Drobyshevski-Yuferev (1974) flow
 !
       case ('DY74')
