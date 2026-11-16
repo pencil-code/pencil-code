@@ -126,7 +126,7 @@ module Sub
   public :: get_random_vec
   public :: sample_poisson_waiting_time
   public :: solve3x3
-  public :: sym_inverse, contract
+  public :: sym_inverse, contract, contract_vec
   public :: box_muller_transform
   public :: get_astaroth_field_name
 
@@ -151,6 +151,7 @@ module Sub
 !
   interface del2                 ! Overload the `del2' function
     module procedure del2_main
+    module procedure del2_general
     module procedure del2_other
   endinterface
 !
@@ -312,7 +313,12 @@ module Sub
   interface contract
     module procedure contract_sym_3x3
   endinterface
-  public contract_vec
+
+  interface contract_vec
+    module procedure contract_vec_upper_lower
+    module procedure contract_vec_lower_lower
+  endinterface contract_vec
+
 
   interface lower_index 
     module procedure lower_index_vec
@@ -2473,6 +2479,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
 !  12-sep-97/axel: coded
 !   7-mar-07/wlad: added cylindrical coordinates
+!  
 !
       use Deriv, only: der,der2
 !
@@ -2501,6 +2508,47 @@ subroutine dot_mn_sv_pencil(a,b,c)
       endif
 !
     endsubroutine del2_main
+!***********************************************************************
+    subroutine del2_general(f,k,del2f,g_upper,contracted_gamma,lgr)
+!
+!  Calculate del2 of a scalar, get scalar.
+!
+!   TP: version of del2 that computes the D^iD_i f using the metric when lgr=T,
+!       and otherwise falls back to del2_main
+!
+      use General, only: loptest
+!
+      intent(in) :: f,k
+      intent(out) :: del2f
+      intent(in) :: g_upper,contracted_gamma
+      intent(in) :: lgr
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      integer :: k
+      real, dimension (nx) :: del2f
+      real, dimension (nx,3) :: df
+      real, dimension (nx,3,3) :: d2f
+      real, dimension (nx,6) :: g_upper,hess
+      real, dimension (nx,3) :: contracted_gamma
+      logical :: lgr
+      integer :: i,j
+!
+      if(loptest(lgr)) then
+        call grad(f,k,df)
+        call g2ij(f,k,d2f)
+        do j=1,3; do i=1,j
+          hess(:,ij_table(i,j))=d2f(:,i,j)
+        enddo; enddo
+        del2f=contract(g_upper,hess)
+        do j=1,3; do i=1,3
+          del2f=del2f-g_upper(:,ij_table(i,j))*contracted_gamma(:,j)*df(:,i)
+        enddo; enddo;
+      else
+       call del2_main(f,k,del2f)
+      endif
+
+!
+    endsubroutine del2_general
 !***********************************************************************
     subroutine del2_other(f,del2f)
 !
@@ -9868,7 +9916,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
     endfunction contract_sym_3x3
 !***********************************************************************
-    function contract_vec(a,b) result(contract)
+    function contract_vec_upper_lower(a,b) result(contract)
 !
 !  Full contraction au^i b_i of two three-vectors
 !
@@ -9879,7 +9927,24 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
       contract = a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
 !
-    endfunction contract_vec
+    endfunction contract_vec_upper_lower
+!***********************************************************************
+    function contract_vec_lower_lower(a,b,g_upper) result(contract)
+!
+!  Full contraction a_i b_i of two three-vectors, where g^ij is used for raising
+!
+!  13-oct-26/TP: coded
+!
+      real, dimension(:,:), intent(in) :: a, b
+      real, dimension(:,:), intent(in) :: g_upper
+      real, dimension(size(a,1)) :: contract
+      real, dimension(size(a,1),size(a,2)) :: au
+!
+
+      call multmv_sym(g_upper,a,au)
+      contract = contract_vec_upper_lower(au,b)
+!
+    endfunction contract_vec_lower_lower
 !***********************************************************************
 subroutine solve3x3(A, b, x)
 !
