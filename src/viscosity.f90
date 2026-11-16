@@ -254,6 +254,9 @@ module Viscosity
   integer :: enum_nnewton_type = 0
   integer :: enum_div_sld_visc = 0
   character (len=labellen) :: ivis_res
+
+  logical :: lhyper3      = .false.
+  logical :: lhyper3_mesh = .false.
 !
   integer :: enum_tdep_nu_type = 0
   contains
@@ -815,6 +818,10 @@ module Viscosity
       if(tdep_nu_type == 'read_ell_from_table') then
         call read_ell_file_to_table
       endif
+      
+      lhyper3      = nu_hyper3      /= 0.0
+      lhyper3_mesh = nu_hyper3_mesh /= 0.0
+
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine initialize_lambda
@@ -3139,8 +3146,8 @@ module Viscosity
 !
 !  Hyper-viscosity coefficient
 !
-      if (nu_hyper3 /= 0.0) nu_hyper3 = pi5_1 * uc * dxmax**5/re_mesh
-      if (nu_hyper3_mesh /= 0.0) nu_hyper3_mesh = pi5_1 * uc/re_mesh/sqrt(real(dimensionality))
+      if (lhyper3)      nu_hyper3 = pi5_1 * uc * dxmax**5/re_mesh
+      if (lhyper3_mesh) nu_hyper3_mesh = pi5_1 * uc/re_mesh/sqrt(real(dimensionality))
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************
@@ -3267,7 +3274,7 @@ module Viscosity
 
     call copy_addr(nu,p_par(1)) ! real dconst
     call copy_addr(zeta,p_par(2))
-    call copy_addr(nu_hyper3,p_par(3))
+    call copy_addr(nu_hyper3,p_par(3)) ! real dconst
     call copy_addr(nu_shock,p_par(4))
     call copy_addr(lvisc_nu_const,p_par(5)) ! int
     call copy_addr(lvisc_hyper3_nu_const,p_par(6)) ! int
@@ -3407,6 +3414,8 @@ module Viscosity
     call string_to_enum(enum_tdep_nu_type,tdep_nu_type)
     call copy_addr(enum_tdep_nu_type,p_par(132)) ! int
     call copy_addr(ell_gam_max,p_par(133))
+    call copy_addr(lhyper3     ,p_par(134)) ! bool
+    call copy_addr(lhyper3_mesh,p_par(135)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Viscosity
