@@ -41,16 +41,15 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
-! PENCILS PROVIDED del2phi;
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
-! PENCILS PROVIDED Vprime; Vthermal_prime
+! PENCILS PROVIDED Vprime; Vthermal_prime; Vpotential
 ! PENCILS PROVIDED plasma_friction;
 ! PENCILS PROVIDED psi; dpsi; gpsi(3); Vprimepsi
 ! PENCILS PROVIDED omega_phi
 ! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
 ! PENCILS EXPECTED lorentz, ext_force(4);
-! PENCILS EXPECTED gr_alp; gr_dalp(3); gr_gamu(6); gr_Gamd(3)
+! PENCILS EXPECTED gr_alp; gr_dalp(3); gr_beta(3); gr_gamu(6); gr_dgam(6,3); gr_Kij(6); gr_Gamd(3)
 !
 !***************************************************************
 !
@@ -271,6 +270,9 @@ module Special
   real, dimension(nx) :: del2phi
   !$omp threadprivate(del2phi)
 
+!
+  real :: cdt_mass=impossible !PAR_DOC: time step limit dt < cdt_mass/m_eff, by default off.
+!
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
@@ -301,7 +303,7 @@ module Special
       lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
       bubble_size,bubble_wall_width,plasma_coupling_coeff,lplasma_coupling, &
       rho_phi, w_phi, G_phi, lnrho_phi0, lthermal_noise, noise_strength, noise_start, &
-      ldR_for_wall_vel,friction_start,seed_reset
+      ldR_for_wall_vel,friction_start,seed_reset, cdt_mass
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -371,6 +373,8 @@ module Special
   logical :: lbubble_pos_on_grid=.false.
 
   logical, pointer :: lgr_metric
+  logical, parameter :: lgr_kg_backreaction=.true. !For now only scalar fields coupled with metric, no hydro yet so scalars fully
+                                                   ! source the metric.
 
   contains
 !****************************************************************************
@@ -411,6 +415,8 @@ module Special
           call farray_register_pde('dpsi',idpsi)
         endif
       endif
+!
+      call put_shared_variable('lgr_backreaction',lgr_kg_backreaction,caller='register_klein_gordon')
 !
       if (lflrw) call farray_register_ode('lna',ilna)
       if (lperturbative_reheating.and.lreheating_hom) then ! Sovan
@@ -598,7 +604,9 @@ module Special
 !     Kishore: Schwinger2; Axel, please check.
 !
       lspecial_early_finalize = .true.
-
+!
+      call get_shared_variable('lgr_metric',lgr_metric,caller='initialize_klein_gordon')
+!
       if (.not. lreloading) call initialize_seed
 
       if (lflrw) then
@@ -701,9 +709,7 @@ module Special
         if (lroot .and. lspherical_coords) print*,"dr is: ",dx
       endif
 !
-
-      call get_shared_variable('lgr_metric',lgr_metric,default_val=.false.)
-
+!
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_klein_gordon')
         call get_shared_variable('alpfpsi',alpfpsi,caller='initialize_klein_gordon')
@@ -1095,6 +1101,18 @@ module Special
 
       ! Compute V_{,phi} as a pencil if requested for diagnostics
       lpenc_requested(i_Vprime)=.true.
+!
+!  Metric pencils of special/z4c.
+!
+      if (lgr_metric) then
+        lpenc_requested(i_gr_alp)=.true.
+        lpenc_requested(i_gr_dalp)=.true.
+        lpenc_requested(i_gr_beta)=.true.
+        lpenc_requested(i_gr_gamu)=.true.
+        lpenc_requested(i_gr_dgam)=.true.
+        lpenc_requested(i_gr_Kij)=.true.
+        lpenc_requested(i_gr_Gamd)=.true.
+      endif
 
       if (lwaterfall) then
         lpenc_requested(i_psi)=.true.
@@ -1392,6 +1410,8 @@ module Special
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
 
+      if (lpencil(i_Vpotential)) call get_Vpotential(f,p%Vpotential)
+!
       if (lbubble_vel_on_grid) then
         do l=1,nx
           distance = abs(0.5-f(l+nghost,m,n,iphi))
@@ -1481,7 +1501,7 @@ module Special
 !   jul-26/touko/alberto: added plasma friction
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
-      use Sub, only: dot_mn, del2, div
+      use Sub, only: dot_mn, del2, div, contract
       use Deriv, only: der, der2
       use General, only: notanumber
       use Messages, only: fatal_error_local
@@ -1492,6 +1512,7 @@ module Special
       real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2psi
+      real, dimension (nx) :: lapse, fric
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
       integer :: i
 !
@@ -1512,6 +1533,19 @@ module Special
       else
         pref_Hubble=3.; pref_Vprime=1.; pref_del2=a21
         pref_alpf=a21**2
+      endif
+      
+! Scalar-field damping/friction coefficient:
+!   FLRW:       3*H in cosmic time, 2*Hconf in conformal time.
+!   3+1: -lapse*K, where K is the trace of the extrinsic curvature 
+!
+      if (lgr_metric) then
+        pref_Vprime=1.; pref_del2=1.
+        lapse=p%gr_alp
+        fric=-p%gr_alp*contract(p%gr_gamu,p%gr_Kij)
+      else
+        lapse=1.
+        fric=pref_Hubble*Hscript
       endif
 !
 ! alberto: right-hand-side for Klein-Gordon equation with Higgs doublet
@@ -1650,9 +1684,9 @@ module Special
       ! end if lphi_doublet
       else
         ! dphi/dt = dphi
-        df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+p%dphi
+        df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+lapse*p%dphi
         df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
-              pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
+              fric*p%dphi-lapse*pref_Vprime*p%Vprime
 !
         if (ip < 13) then
           if (notanumber(p%phi)) then
@@ -1681,7 +1715,7 @@ module Special
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
           if (ip < 13) then
             if (notanumber(del2phi)) then
-              call fatal_error_local('dspecial_dt',"NaNs in p%del2phi")
+              call fatal_error_local('dspecial_dt',"NaNs in del2phi")
             endif
           endif
         endif
@@ -1689,11 +1723,11 @@ module Special
 
         ! second scalar if lwaterfall
         if (lwaterfall) then
-          df(l1:l2,m,n,ipsi)=df(l1:l2,m,n,ipsi)+p%dpsi
+          df(l1:l2,m,n,ipsi)=df(l1:l2,m,n,ipsi)+lapse*p%dpsi
           df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) - &
-                pref_Hubble*Hscript*p%dpsi-pref_Vprime*p%Vprimepsi
+                fric*p%dpsi-lapse*pref_Vprime*p%Vprimepsi
           if (c_psi/=0 .and. .not. lpsi_hom) then
-            call del2_lapse(f,p,iphi,del2phi)
+            call del2_lapse(f,p,ipsi,del2psi)
             df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) + c_psi**2*pref_del2*del2psi
           endif
         endif
@@ -1731,7 +1765,7 @@ module Special
 !  If Ndiv=0 is set, we compute instead an advective timestep based on the Alfven speed.
 !  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
 !
-      if (lfirst.and.lcourant_dt.and.ldt_klein_gordon) then
+      if (lupdate_courant_dt.and.ldt_klein_gordon) then
         if (lspeed_of_light_dt) then
           dt1_special = 0.
           maxadvec=max(maxadvec,maxval(dline_1,2))
@@ -1744,7 +1778,19 @@ module Special
         else
           dt1_special = Ndiv*abs(Hscript)
         endif
-        dt1_max=max(dt1_max,dt1_special)
+!
+! oscillation frequency alpha*m_eff, m_eff^2 ~ |V''|.
+!
+        if(cdt_mass /= impossible) then
+          if (lgr_metric) then
+            tmp=abs(phimass2)
+            if (lwaterfall) tmp=tmp+abs(psimass2)+coupl_phipsi**2*(p%phi**2+p%psi**2)+3*abs(lambda_psi)*p%psi**2
+            dt1_special=max(dt1_special,p%gr_alp*sqrt(tmp)/cdt_mass)
+          endif
+          dt1_max=max(dt1_max,dt1_special)
+        else
+          call fatal_error("dspecial_dt", "oscillation frequency only taken into account with lgr_metric=T")
+        endif
       endif
 !
 !  Diagnostics
