@@ -605,7 +605,7 @@ module Special
 !
       lspecial_early_finalize = .true.
 !
-      call get_shared_variable('lgr_metric',lgr_metric,caller='initialize_klein_gordon')
+      call get_shared_variable('lgr_metric',lgr_metric,caller='initialize_klein_gordon',default_val=.false.)
 !
       if (.not. lreloading) call initialize_seed
 
@@ -1786,11 +1786,11 @@ module Special
             tmp=abs(phimass2)
             if (lwaterfall) tmp=tmp+abs(psimass2)+coupl_phipsi**2*(p%phi**2+p%psi**2)+3*abs(lambda_psi)*p%psi**2
             dt1_special=max(dt1_special,p%gr_alp*sqrt(tmp)/cdt_mass)
+          else
+            call fatal_error("dspecial_dt", "oscillation frequency only taken into account with lgr_metric=T")
           endif
-          dt1_max=max(dt1_max,dt1_special)
-        else
-          call fatal_error("dspecial_dt", "oscillation frequency only taken into account with lgr_metric=T")
         endif
+        dt1_max=max(dt1_max,dt1_special)
       endif
 !
 !  Diagnostics
