@@ -81,13 +81,12 @@ module GPU
   !PAR-DOC: larger search, but is considerably faster).
 
   logical :: lac_sparse_autotuning_always=.false.
+  !PAR_DOC: Is autotuning sparse regardless of the grid size and the number of processors
 
   logical :: lcumulative_df_on_gpu=.false.
   !PAR-DOC: Whether df is 0 or the accumulated value at the start of the kernel.  MR: don't understand this: which kernel?
   !PAR-DOC: For simplicity df is zero and then accumulated to the buffer, but sometimes you need to be careful like with
   !PAR-DOC: short stopping time approximation in dustvelocity (the only case we are aware at the moment where the difference matters).
-
-  logical :: lskip_rtime_compilation=.false.    !PAR-DOC: Placeholder
 
   logical :: lread_all_vars_from_device = .false.
   !PAR-DOC: By default only pde variables and those aux variables that are registered to be always read are read from the device.
@@ -537,7 +536,6 @@ contains
     integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(lskip_rtime_compilation,p_par(3)) ! bool
     call copy_addr(lcumulative_df_on_gpu,p_par(4)) ! bool
     call copy_addr(ltest_bcs,p_par(7)) ! bool
     call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
