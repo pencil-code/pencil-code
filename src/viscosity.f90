@@ -3276,11 +3276,11 @@ module Viscosity
     call copy_addr(zeta,p_par(2))
     call copy_addr(nu_hyper3,p_par(3)) ! real dconst
     call copy_addr(nu_shock,p_par(4))
-    call copy_addr(lvisc_nu_const,p_par(5)) ! int
-    call copy_addr(lvisc_hyper3_nu_const,p_par(6)) ! int
-    call copy_addr(lvisc_nu_shock,p_par(7)) ! int
+    call copy_addr(lvisc_nu_const,p_par(5)) ! bool
+    call copy_addr(lvisc_hyper3_nu_const,p_par(6)) ! bool
+    call copy_addr(lvisc_nu_shock,p_par(7)) ! bool
     call copy_addr(nu_hyper2,p_par(8))
-    call copy_addr(lvisc_rho_nu_const_bulk,p_par(9)) ! int
+    call copy_addr(lvisc_rho_nu_const_bulk,p_par(9)) ! bool
     call copy_addr(nu_cspeed,p_par(10))
     call copy_addr(nu_hyper3_mesh,p_par(12))
     call copy_addr(nu_spitzer,p_par(13))
