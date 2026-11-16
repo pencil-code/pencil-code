@@ -237,6 +237,7 @@ clean:
 cleann: clean
 	@rm -f ../cparam_c.h ../defines_cdata.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h ../mpicomm_c.h ../boundcond_c.h ../cdata_c.h
 	@rm -f $(DSL_MODULE_DIR)/PC_modulepardecs.h
+	@rm -f $(DSL_MODULE_DIR)/rhs.h
 	@rm -f $(PC_HEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module_parfuncs.h
 #
 #--------------------------------------------------------------------------------------------------------------------------------------------

@@ -66,6 +66,7 @@
     integer :: input_channels  = 3
     integer :: output_channels = 6
     logical, pointer :: lconservative
+    real, pointer :: mu
 
     contains
 !***************************************************************
@@ -104,6 +105,7 @@
 !
       call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), lmpicomm)
 !need this to be false for now but should be ltrained
+      print*, 'ltrained and lrun_epoch and modelfn', ltrained, lrun_epoch, modelfn
       if (ltrained.and..not.lrun_epoch) then
         call TF_load_model(trim(model), trim(modelfn))
       else
@@ -159,6 +161,7 @@
 !
       call farray_register_auxiliary('uumean',iuumean,vector=3,rhs=.true.,communicated=.true.)
       call get_shared_variable('lconservative',lconservative)
+      call get_shared_variable('mu',mu)
       if (lhydro) then
         call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
         if (lconservative) then
@@ -308,7 +311,7 @@
       endif
 
     endsubroutine infer
-!***************************************************************
+!!***************************************************************
     subroutine scale(f, minvalue, maxvalue)
 
       real, dimension (:,:,:,:) :: f
@@ -486,13 +489,15 @@
       if (ltrained) then 
         if (lhydro) then   
           call div_tensor(f,div_hydro_sgs,itau_hydro)
-          !if (lconservative) call div_tensor(f,div_hydro_strain_sgs,itau_strain)
+          if (lconservative) then
+            call div_tensor(f,div_hydro_strain_sgs,itau_strain)
+          endif 
         endif
         if (ltrain_mag) call div_tensor(f,div_mag_sgs,itau_bb)
         if (t >= start_infer) then
           if (lhydro) then 
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
-            if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + div_hydro_strain_sgs
+            if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + 2*mu*div_hydro_strain_sgs
           endif
           if (ltrain_mag) then
             if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + div_mag_sgs

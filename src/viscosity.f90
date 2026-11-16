@@ -342,6 +342,9 @@ module Viscosity
         call put_shared_variable('LH1_rprof',LH1_rprof)
       endif
 !
+    if (ltraining) then
+        call put_shared_variable('mu',mu)
+    endif
     endsubroutine register_viscosity
 !***********************************************************************
     subroutine initialize_viscosity

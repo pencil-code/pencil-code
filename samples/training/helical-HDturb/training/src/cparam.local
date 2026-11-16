@@ -9,4 +9,4 @@
 ! COMMUNICATED AUXILIARIES 30
 !
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
-integer, parameter :: nxgrid=36,nygrid=nxgrid,nzgrid=nxgrid
+integer, parameter :: nxgrid=126,nygrid=nxgrid,nzgrid=nxgrid

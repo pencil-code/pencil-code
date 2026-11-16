@@ -5,7 +5,7 @@ field_order(AC_iuumean__mod__training != 0 ? AC_iuumean__mod__training+2-1 : -1)
 
 const Field3 uumean = 
 {
-	uumean_X,
+    uumean_X,
 	uumean_Y,
 	uumean_Z
 }
@@ -22,6 +22,9 @@ const Field3 bbmean =
 
 communicated Field3 mom_mean
 communicated Field rho_mean
+
+communicated Field3 mom_real
+communicated Field rho_real
 
 communicated FieldSymmetricTensor momentum_sgs
 FieldSymmetricTensor bb_tensor_product
@@ -147,85 +150,111 @@ write_tensor_product(FieldSymmetricTensor T, real3 uu)
 }
 
 
-write_symmetricTensor_matrix(FieldSymmetricTensor T, AcMatrix Aij)
+write_tensor_product_over_rho(FieldSymmetricTensor T, real3 uu, real rho)
 {
-	write(T.xx, Aij[0][0])	
-	write(T.yy, Aij[1][1])	
-	write(T.zz, Aij[2][2])	
-	write(T.xy, Aij[0][1])	
-	write(T.yz, Aij[1][2])	
-	write(T.xz, Aij[0][2])
+	write(T.xx, uu.x*uu.x/rho)
+	write(T.yy, uu.y*uu.y/rho)
+	write(T.zz, uu.z*uu.z/rho)
+	write(T.xy, uu.x*uu.y/rho)
+	write(T.yz, uu.y*uu.z/rho)
+	write(T.xz, uu.x*uu.z/rho)
 }
+
+write_symmetricTensor_minus_tensor_product_over_rho(FieldSymmetricTensor T, real3 uu, real rho)
+{
+  write(T.xx, T.xx - uu.x*uu.x/rho)
+  write(T.yy, T.yy - uu.y*uu.y/rho)
+  write(T.zz, T.zz - uu.z*uu.z/rho)
+  write(T.xy, T.xy - uu.x*uu.y/rho)
+  write(T.yz, T.yz - uu.y*uu.z/rho)
+  write(T.xz, T.xz - uu.x*uu.z/rho)
+}
+
+write_symmetricTensor_minus_matrix(FieldSymmetricTensor T, AcMatrix Aij)
+{
+	write(T.xx, T.xx - Aij[0][0])
+	write(T.yy, T.yy - Aij[1][1])
+	write(T.zz, T.zz - Aij[2][2])
+	write(T.xy, T.xy - Aij[0][1])
+	write(T.yz, T.yz - Aij[1][2])
+	write(T.xz, T.xz - Aij[0][2])
+}
+
 
 
 // Variables for running statistics
 
 // For hydro case:
 // used interchangably, either for uumean or mom_mean
-global output real in_acc_sum[3]
-global output real in_acc_sum_sq[3]
+global output real in_acc_sum_mom[3] 
+global output real in_acc_sum_sq_mom[3] 
+global output real in_acc_sum_uu[3]
+global output real in_acc_sum_sq_uu[3]
 global output real in_acc_sum_rho
 global output real in_acc_sum_sq_rho
 
 // used interchangably, either for tau_hydro from uumean or mom_mean
-global output real out_acc_sum[6]
-global output real out_acc_sum_sq[6]
+global output real out_acc_sum_tau[6]
+global output real out_acc_sum_sq_tau[6]
 global output real out_acc_sum_strain[6]
 global output real out_acc_sum_sq_strain[6]
 
 
 // For electromagnetism case:
-global output real in_acc_sum_U[3]
-global output real in_acc_sum_squared_U[3]
-global output real in_acc_sum_B[3]
-global output real in_acc_sum_squared_B[3]
+global output real in_acc_sum_bb[3]
+global output real in_acc_sum_sq_bb[3]
 
-global output real out_acc_sum_EMF[3]
-global output real out_acc_sum_squared_EMF[3]
+global output real out_acc_sum_emf[3]
+global output real out_acc_sum_sq_emf[3]
 
 
-accumulate_norm_sum(Field F, sum_dst, sum_squared_dst){
-	reduce_sum(F, sum_dst)
-	reduce_sum(F*F, sum_squared_dst)
+accumulate_norm_sum(Field F, sum_dst, sum_squared_dst)
+{
+    reduce_sum(F, sum_dst)
+    reduce_sum(F * F, sum_squared_dst)
 }
 
-accumulate_norm_sum_add(Field F, sum_dst, sum_squared_dst){
-	reduce_sum_add(F, sum_dst)
-	reduce_sum_add(F*F, sum_squared_dst)
+accumulate_norm_sum_add(Field F, sum_dst, sum_squared_dst)
+{
+    reduce_sum_add(F, sum_dst)
+    reduce_sum_add(F * F, sum_squared_dst)
 }
 
-normalize_field(Field F, acc_sum, acc_sum_squared, count){
-    real num_acc = (real)count*AC_ngrid.x*AC_ngrid.y*AC_ngrid.z
-		real mean = acc_sum/num_acc
-		real std_squared=(acc_sum_squared /num_acc) - (mean*mean)
-		real std = sqrt(std_squared)
-    real std = max(std, 1e-8)
-		return (F - mean)/std
+normalize_field(Field F, acc_sum, acc_sum_squared, count)
+{
+    real num_acc = (real)count *AC_ngrid.x *AC_ngrid.y *AC_ngrid.z
+    real mean = acc_sum / num_acc 
+    real std_squared = (acc_sum_squared / num_acc) - (mean * mean)
+    real std = sqrt(std_squared) 
+    real std = max(std, 1e-8) 
+    return (F - mean) / std
 }
 
-write_normalize(FieldSymmetricTensor T, acc_sum, acc_sum_sq, count){
-  write(T.xx,normalize_field(T.xx,acc_sum[0],acc_sum_sq[0],max(1,count)))
-  write(T.yy,normalize_field(T.yy,acc_sum[1],acc_sum_sq[1],max(1,count)))
-  write(T.zz,normalize_field(T.zz,acc_sum[2],acc_sum_sq[2],max(1,count)))
-  write(T.xy,normalize_field(T.xy,acc_sum[3],acc_sum_sq[3],max(1,count)))
-  write(T.yz,normalize_field(T.yz,acc_sum[4],acc_sum_sq[4],max(1,count)))
-  write(T.xz,normalize_field(T.xz,acc_sum[5],acc_sum_sq[5],max(1,count)))
+write_normalize(FieldSymmetricTensor T, acc_sum, acc_sum_sq, count)
+{
+    write(T.xx, normalize_field(T.xx, acc_sum[0], acc_sum_sq[0], max(1, count)))
+    write(T.yy, normalize_field(T.yy, acc_sum[1], acc_sum_sq[1], max(1, count)))
+    write(T.zz, normalize_field(T.zz, acc_sum[2], acc_sum_sq[2], max(1, count)))
+    write(T.xy, normalize_field(T.xy, acc_sum[3], acc_sum_sq[3], max(1, count)))
+    write(T.yz, normalize_field(T.yz, acc_sum[4], acc_sum_sq[4], max(1, count)))
+    write(T.xz, normalize_field(T.xz, acc_sum[5], acc_sum_sq[5], max(1, count)))
 }
 
-write_normalize(Field3 T, acc_sum, acc_sum_sq, count){
-  write(T.x,normalize_field(T.x,acc_sum[0],acc_sum_sq[0],max(1,count)))
-  write(T.y,normalize_field(T.y,acc_sum[1],acc_sum_sq[1],max(1,count)))
-  write(T.z,normalize_field(T.z,acc_sum[2],acc_sum_sq[2],max(1,count)))
+write_normalize(Field3 T, acc_sum, acc_sum_sq, count)
+{
+    write(T.x, normalize_field(T.x, acc_sum[0], acc_sum_sq[0], max(1, count)))
+    write(T.y, normalize_field(T.y, acc_sum[1], acc_sum_sq[1], max(1, count)))
+    write(T.z, normalize_field(T.z, acc_sum[2], acc_sum_sq[2], max(1, count)))
 }
 
 denormalize_field(Field F, acc_sum, acc_sum_squared, count)
 {
-  real num_acc = (real)count*AC_ngrid.x*AC_ngrid.y*AC_ngrid.z
-  real mean = acc_sum/num_acc
-	real std_squared=(acc_sum_squared /num_acc) - (mean*mean)
-  real std = sqrt(std_squared)
-  real std = max(std, 1e-8)
-  return (F * std ) + mean
+    real num_acc = (real)count *AC_ngrid.x *AC_ngrid.y *AC_ngrid.z
+    real mean =  acc_sum / num_acc
+    real std_squared = (acc_sum_squared / num_acc) - (mean * mean)
+    real std = sqrt(std_squared) 
+    real std = max(std, 1e-8)
+    return (F * std) + mean
 }
 
 descale_tensor_mag(Field F, real acc_sum_mag, real acc_sum_squared_mag, int count)
@@ -252,19 +281,18 @@ Kernel get_bfield(){
 	}
 }
 
-
-
 elemental gsmooth(Field f)
 {
-	if(AC_smoothing_radius__mod__training == 3)
-	{
-		return gaussian_smooth_inplace_r3(f)
-	}
+    if (AC_smoothing_radius__mod__training == 3)
+    {
+        // return gaussian_smooth_inplace_r3(f)
+        //return gaussian_smooth_3x_stencil_r3(f)
+        return gaussian_smooth_4x_stencil_r3(f)
+    }
 #if STENCIL_ORDER == 10
-	else if(AC_smoothing_radius__mod__training == 5)
-	{
-		return gaussian_smooth_inplace_r5(f)
-	}
+    else if (AC_smoothing_radius__mod__training == 5) {
+        return gaussian_smooth_inplace_r5(f)
+    }
 #endif
 }
 
@@ -280,7 +308,7 @@ Kernel fluctutation_terms_and_means()
              write_symmetricTensor_matrix(TAU_STRAIN, Sij)
              write(mom_mean, gsmooth(MOM))
              write(rho_mean, gsmooth(F_RHO))
-             write_tensor_product(TAU_HYDRO,MOM/sqrt(F_RHO))
+             write_tensor_product_over_rho(TAU_HYDRO, MOM, F_RHO)
            }
            else
            {
@@ -290,7 +318,7 @@ Kernel fluctutation_terms_and_means()
 	}
 	if(AC_ltrain_mag__mod__training)
 	{
-            write(uumean,gsmooth(F_UVEC))
+        write(uumean,gsmooth(F_UVEC))
 	    write(sgs_emf,cross(F_UVEC,bbmean))
 	    write(bb_tensor_product,tensor_product(bbmean))
 	    write(bbmean,gsmooth(bbmean))
@@ -326,26 +354,21 @@ Kernel compute_taus(){
 	//Let us always follow the convention that the sgs term is:
 	//mean(f) - f(from means)
 	if(!AC_ltrained__mod__training){
-          if(AC_lconservative__mod__hydro)
-          {
-            uij_mean = gradient_tensor(mom_mean, rho_mean)
-            Sij_mean = traceless_strain(uij_mean)
-            write(TAU_STRAIN.xx, TAU_STRAIN.xx - Sij_mean[0][0])
-            write(TAU_STRAIN.yy, TAU_STRAIN.yy - Sij_mean[1][1])
-            write(TAU_STRAIN.zz, TAU_STRAIN.zz - Sij_mean[2][2])
-            write(TAU_STRAIN.xy, TAU_STRAIN.xy - Sij_mean[0][1])
-            write(TAU_STRAIN.yz, TAU_STRAIN.yz - Sij_mean[1][2])
-            write(TAU_STRAIN.xz, TAU_STRAIN.xz - Sij_mean[0][2])
-            write(TAU_HYDRO, TAU_HYDRO - tensor_product(mom_mean)/rho_mean)
-          }
-          else
-          {
-              write(TAU_HYDRO,TAU_HYDRO - tensor_product(uumean))
-          }
+    if(AC_lconservative__mod__hydro)
+      {
+          uij_mean = gradient_tensor(mom_mean, rho_mean)
+          Sij_mean = traceless_strain(uij_mean)
+          write_symmetricTensor_minus_tensor_product_over_rho(TAU_HYDRO, mom_mean, rho_mean)
+          write_symmetricTensor_minus_matrix(TAU_STRAIN, Sij_mean)
+      }
+      else
+      {
+          write(TAU_HYDRO,TAU_HYDRO - tensor_product(uumean))
+      }
 	  if(AC_ltrain_mag__mod__training)
 	  {
-            write(bb_tensor_product,bb_tensor_product-tensor_product(bbmean))
-            write(sgs_emf,sgs_emf - cross(uumean,bbmean))
+          write(bb_tensor_product,bb_tensor_product-tensor_product(bbmean))
+          write(sgs_emf,sgs_emf - cross(uumean,bbmean))
 	  }
 	}
 }
@@ -382,8 +405,6 @@ Kernel get_averaged_fields(){
     }
   }
 }
-
-
 global output real AC_l2_sum
 Kernel l2_sum(){
 /*
@@ -406,180 +427,167 @@ Kernel l2_sum(){
 
 Kernel descale_inferred_values_kernel(int count)
 {
-	if(lhydro)
-	{
-    if(AC_lconservative__mod__hydro){
-	    denormalize_field(TAU_STRAIN.xx, out_acc_sum_strain[0], out_acc_sum_sq_strain[0],count)
-	    denormalize_field(TAU_STRAIN.yy, out_acc_sum_strain[1], out_acc_sum_sq_strain[1],count)
-	    denormalize_field(TAU_STRAIN.zz, out_acc_sum_strain[2], out_acc_sum_sq_strain[2],count)
-	    denormalize_field(TAU_STRAIN.xy, out_acc_sum_strain[3], out_acc_sum_sq_strain[3],count)
-	    denormalize_field(TAU_STRAIN.yz, out_acc_sum_strain[4], out_acc_sum_sq_strain[4],count)
-	    denormalize_field(TAU_STRAIN.xz, out_acc_sum_strain[5], out_acc_sum_sq_strain[5],count)
-    }
-	  denormalize_field(TAU_HYDRO.xx, out_acc_sum[0], out_acc_sum_sq[0],count)
-	  denormalize_field(TAU_HYDRO.yy, out_acc_sum[1], out_acc_sum_sq[1],count)
-	  denormalize_field(TAU_HYDRO.zz, out_acc_sum[2], out_acc_sum_sq[2],count)
-	  denormalize_field(TAU_HYDRO.xy, out_acc_sum[3], out_acc_sum_sq[3],count)
-	  denormalize_field(TAU_HYDRO.yz, out_acc_sum[4], out_acc_sum_sq[4],count)
-	  denormalize_field(TAU_HYDRO.xz, out_acc_sum[5], out_acc_sum_sq[5],count)
-	}
-
-	if (AC_ltrain_mag__mod__training)
+    if (lhydro)
+    {
+        if (AC_lconservative__mod__hydro)
         {
-          descale_tensor_mag(F_SGS_EMFVEC.x, out_acc_sum_EMF[0], out_acc_sum_squared_EMF[0], count)
-          descale_tensor_mag(F_SGS_EMFVEC.y, out_acc_sum_EMF[1], out_acc_sum_squared_EMF[1], count)
-          descale_tensor_mag(F_SGS_EMFVEC.z, out_acc_sum_EMF[2], out_acc_sum_squared_EMF[2], count)
-        }
+            write(TAU_STRAIN.xx, denormalize_field(TAU_STRAIN.xx, out_acc_sum_strain[0], out_acc_sum_sq_strain[0], count))
+            write(TAU_STRAIN.yy, denormalize_field(TAU_STRAIN.yy, out_acc_sum_strain[1], out_acc_sum_sq_strain[1], count))
+            write(TAU_STRAIN.zz, denormalize_field(TAU_STRAIN.zz, out_acc_sum_strain[2], out_acc_sum_sq_strain[2], count))
+            write(TAU_STRAIN.xy, denormalize_field(TAU_STRAIN.xy, out_acc_sum_strain[3], out_acc_sum_sq_strain[3], count))
+            write(TAU_STRAIN.yz, denormalize_field(TAU_STRAIN.yz, out_acc_sum_strain[4], out_acc_sum_sq_strain[4], count))
+            write(TAU_STRAIN.xz, denormalize_field(TAU_STRAIN.xz, out_acc_sum_strain[5], out_acc_sum_sq_strain[5], count))
+    }
+    write(TAU_HYDRO.xx, denormalize_field(TAU_HYDRO.xx, out_acc_sum[0], out_acc_sum_sq[0], count))
+    write(TAU_HYDRO.yy, denormalize_field(TAU_HYDRO.yy, out_acc_sum[1], out_acc_sum_sq[1], count))
+    write(TAU_HYDRO.zz, denormalize_field(TAU_HYDRO.zz, out_acc_sum[2], out_acc_sum_sq[2], count))
+    write(TAU_HYDRO.xy, denormalize_field(TAU_HYDRO.xy, out_acc_sum[3], out_acc_sum_sq[3], count))
+    write(TAU_HYDRO.yz, denormalize_field(TAU_HYDRO.yz, out_acc_sum[4], out_acc_sum_sq[4], count))
+    write(TAU_HYDRO.xz, denormalize_field(TAU_HYDRO.xz, out_acc_sum[5], out_acc_sum_sq[5], count))
+  }
+	if (AC_ltrain_mag__mod__training)
+    {
+        descale_tensor_mag(F_SGS_EMFVEC.x, out_acc_sum_EMF[0], out_acc_sum_squared_EMF[0], count)
+        descale_tensor_mag(F_SGS_EMFVEC.y, out_acc_sum_EMF[1], out_acc_sum_squared_EMF[1], count)
+        descale_tensor_mag(F_SGS_EMFVEC.z, out_acc_sum_EMF[2], out_acc_sum_squared_EMF[2], count)
+  }
 }
 
+Kernel compute_normalize_sums() {
+  if (lhydro) {
+        if (AC_lconservative__mod__hydro)
+        {
+            reduce_sum_add(rho_mean, in_acc_sum_rho)
+            reduce_sum_add(rho_mean * rho_mean, in_acc_sum_sq_rho)
+            reduce_sum_add(mom_mean.x, in_acc_sum[0])
+            reduce_sum_add(mom_mean.y, in_acc_sum[1])
+            reduce_sum_add(mom_mean.z, in_acc_sum[2])
 
+            reduce_sum_add(mom_mean.x * mom_mean.x, in_acc_sum_sq[0])
+            reduce_sum_add(mom_mean.y * mom_mean.y, in_acc_sum_sq[1])
+            reduce_sum_add(mom_mean.z * mom_mean.z, in_acc_sum_sq[2])
 
+            reduce_sum_add(TAU_STRAIN.xx, out_acc_sum_strain[0]) 
+            reduce_sum_add(TAU_STRAIN.yy, out_acc_sum_strain[1])
+            reduce_sum_add(TAU_STRAIN.zz, out_acc_sum_strain[2])
+            reduce_sum_add(TAU_STRAIN.xy, out_acc_sum_strain[3])
+            reduce_sum_add(TAU_STRAIN.yz, out_acc_sum_strain[4])
+            reduce_sum_add(TAU_STRAIN.xz, out_acc_sum_strain[5])
 
-Kernel compute_normalize_sums()
-{
-	if(lhydro)
-	{
-    
-    if(AC_lconservative__mod__hydro){
-      reduce_sum_add(rho_mean,in_acc_sum_rho)
-      reduce_sum_add(rho_mean*rho_mean,in_acc_sum_sq_rho)
-    
-	    reduce_sum_add(mom_mean.x,in_acc_sum[0])
-	    reduce_sum_add(mom_mean.y,in_acc_sum[1])
-	    reduce_sum_add(mom_mean.z,in_acc_sum[2])
+            reduce_sum_add(TAU_STRAIN.xx * TAU_STRAIN.xx, out_acc_sum_sq_strain[0])
+            reduce_sum_add(TAU_STRAIN.yy * TAU_STRAIN.yy, out_acc_sum_sq_strain[1])
+            reduce_sum_add(TAU_STRAIN.zz * TAU_STRAIN.zz, out_acc_sum_sq_strain[2])
+            reduce_sum_add(TAU_STRAIN.xy * TAU_STRAIN.xy, out_acc_sum_sq_strain[3])
+            reduce_sum_add(TAU_STRAIN.yz * TAU_STRAIN.yz, out_acc_sum_sq_strain[4])
+            reduce_sum_add(TAU_STRAIN.xz * TAU_STRAIN.xz, out_acc_sum_sq_strain[5])
 
+        } 
+        else 
+        {
+            // inputs
+            reduce_sum_add(uumean.x, in_acc_sum[0])
+            reduce_sum_add(uumean.y, in_acc_sum[1])
+            reduce_sum_add(uumean.z, in_acc_sum[2])
 
-	    reduce_sum_add(mom_mean.x*mom_mean.x,in_acc_sum_sq[0])
-	    reduce_sum_add(mom_mean.y*mom_mean.y,in_acc_sum_sq[1])
-	    reduce_sum_add(mom_mean.z*mom_mean.z,in_acc_sum_sq[2])
+            reduce_sum_add(uumean.x * uumean.x, in_acc_sum_sq[0])
+            reduce_sum_add(uumean.y * uumean.y, in_acc_sum_sq[1])
+            reduce_sum_add(uumean.z * uumean.z, in_acc_sum_sq[2])
+        }
 
-      reduce_sum_add(TAU_STRAIN.xx,out_acc_sum_strain[0])
-      reduce_sum_add(TAU_STRAIN.yy,out_acc_sum_strain[1])
-      reduce_sum_add(TAU_STRAIN.zz,out_acc_sum_strain[2])
-      reduce_sum_add(TAU_STRAIN.xy,out_acc_sum_strain[3])
-      reduce_sum_add(TAU_STRAIN.yz,out_acc_sum_strain[4])
-      reduce_sum_add(TAU_STRAIN.xz,out_acc_sum_strain[5])
+        reduce_sum_add(TAU_HYDRO.xx, out_acc_sum[0])
+        reduce_sum_add(TAU_HYDRO.yy, out_acc_sum[1])
+        reduce_sum_add(TAU_HYDRO.zz, out_acc_sum[2])
+        reduce_sum_add(TAU_HYDRO.xy, out_acc_sum[3]) 
+        reduce_sum_add(TAU_HYDRO.yz, out_acc_sum[4])
+        reduce_sum_add(TAU_HYDRO.xz, out_acc_sum[5])
 
-      reduce_sum_add(TAU_STRAIN.xx*TAU_STRAIN.xx,out_acc_sum_sq_strain[0])
-      reduce_sum_add(TAU_STRAIN.yy*TAU_STRAIN.yy,out_acc_sum_sq_strain[1])
-      reduce_sum_add(TAU_STRAIN.zz*TAU_STRAIN.zz,out_acc_sum_sq_strain[2])
-      reduce_sum_add(TAU_STRAIN.xy*TAU_STRAIN.xy,out_acc_sum_sq_strain[3])
-      reduce_sum_add(TAU_STRAIN.yz*TAU_STRAIN.yz,out_acc_sum_sq_strain[4])
-      reduce_sum_add(TAU_STRAIN.xz*TAU_STRAIN.xz,out_acc_sum_sq_strain[5])
-
+        reduce_sum_add(TAU_HYDRO.xx * TAU_HYDRO.xx, out_acc_sum_sq[0])
+        reduce_sum_add(TAU_HYDRO.yy * TAU_HYDRO.yy, out_acc_sum_sq[1])
+        reduce_sum_add(TAU_HYDRO.zz * TAU_HYDRO.zz, out_acc_sum_sq[2])
+        reduce_sum_add(TAU_HYDRO.xy * TAU_HYDRO.xy, out_acc_sum_sq[3])
+        reduce_sum_add(TAU_HYDRO.yz * TAU_HYDRO.yz, out_acc_sum_sq[4])
+        reduce_sum_add(TAU_HYDRO.xz * TAU_HYDRO.xz, out_acc_sum_sq[5])
     }
-    else{
-	    //inputs
-	    reduce_sum_add(uumean.x,in_acc_sum[0])
-	    reduce_sum_add(uumean.y,in_acc_sum[1])
-	    reduce_sum_add(uumean.z,in_acc_sum[2])
+	if (AC_ltrain_mag__mod__training)
+    {
+        // Inputs
+	    reduce_sum_add(uumean.x,in_acc_sum_U[0])
+	    reduce_sum_add(uumean.y,in_acc_sum_U[1])
+	    reduce_sum_add(uumean.z,in_acc_sum_U[2])
 
-	    reduce_sum_add(uumean.x*uumean.x,in_acc_sum_sq[0])
-	    reduce_sum_add(uumean.y*uumean.y,in_acc_sum_sq[1])
-	    reduce_sum_add(uumean.z*uumean.z,in_acc_sum_sq[2])
-        
- 	    reduce_sum_add(TAU_HYDRO.xx,out_acc_sum[0])
-            reduce_sum_add(TAU_HYDRO.yy,out_acc_sum[1])
-            reduce_sum_add(TAU_HYDRO.zz,out_acc_sum[2])
-            reduce_sum_add(TAU_HYDRO.xy,out_acc_sum[3])
-            reduce_sum_add(TAU_HYDRO.yz,out_acc_sum[4])
-            reduce_sum_add(TAU_HYDRO.xz,out_acc_sum[5])
-
-            reduce_sum_add(TAU_HYDRO.xx*TAU_HYDRO.xx,out_acc_sum_sq[0])
-            reduce_sum_add(TAU_HYDRO.yy*TAU_HYDRO.yy,out_acc_sum_sq[1])
-            reduce_sum_add(TAU_HYDRO.zz*TAU_HYDRO.zz,out_acc_sum_sq[2])
-            reduce_sum_add(TAU_HYDRO.xy*TAU_HYDRO.xy,out_acc_sum_sq[3])
-            reduce_sum_add(TAU_HYDRO.yz*TAU_HYDRO.yz,out_acc_sum_sq[4])
-            reduce_sum_add(TAU_HYDRO.xz*TAU_HYDRO.xz,out_acc_sum_sq[5])
-
-    }
-	}
-
-	if (AC_ltrain_mag__mod__training) {
-	  // Inputs
-	  reduce_sum_add(uumean.x,in_acc_sum_U[0])
-	  reduce_sum_add(uumean.y,in_acc_sum_U[1])
-	  reduce_sum_add(uumean.z,in_acc_sum_U[2])
-
-	  reduce_sum_add(bbmean.x,in_acc_sum_B[0])
-	  reduce_sum_add(bbmean.y,in_acc_sum_B[1])
-	  reduce_sum_add(bbmean.z,in_acc_sum_B[2])
+	    reduce_sum_add(bbmean.x,in_acc_sum_B[0])
+	    reduce_sum_add(bbmean.y,in_acc_sum_B[1])
+	    reduce_sum_add(bbmean.z,in_acc_sum_B[2])
 
 
-	  reduce_sum_add(uumean.x*uumean.x,in_acc_sum_squared_U[0])
-	  reduce_sum_add(uumean.y*uumean.y,in_acc_sum_squared_U[1])
-	  reduce_sum_add(uumean.z*uumean.z,in_acc_sum_squared_U[2])
+	    reduce_sum_add(uumean.x*uumean.x,in_acc_sum_squared_U[0])
+	    reduce_sum_add(uumean.y*uumean.y,in_acc_sum_squared_U[1])
+	    reduce_sum_add(uumean.z*uumean.z,in_acc_sum_squared_U[2])
 
-	  reduce_sum_add(bbmean.x*bbmean.x,in_acc_sum_squared_B[0])
-	  reduce_sum_add(bbmean.y*bbmean.y,in_acc_sum_squared_B[1])
-	  reduce_sum_add(bbmean.z*bbmean.z,in_acc_sum_squared_B[2])
+	    reduce_sum_add(bbmean.x*bbmean.x,in_acc_sum_squared_B[0])
+	    reduce_sum_add(bbmean.y*bbmean.y,in_acc_sum_squared_B[1])
+	    reduce_sum_add(bbmean.z*bbmean.z,in_acc_sum_squared_B[2])
           
-	  // Outputs 
-	  reduce_sum_add(F_SGS_EMFVEC.x,out_acc_sum_EMF[0])
-	  reduce_sum_add(F_SGS_EMFVEC.y,out_acc_sum_EMF[1])
-	  reduce_sum_add(F_SGS_EMFVEC.z,out_acc_sum_EMF[2])
+	    // Outputs 
+	    reduce_sum_add(F_SGS_EMFVEC.x,out_acc_sum_EMF[0])
+	    reduce_sum_add(F_SGS_EMFVEC.y,out_acc_sum_EMF[1])
+	    reduce_sum_add(F_SGS_EMFVEC.z,out_acc_sum_EMF[2])
 
-	  reduce_sum_add(F_SGS_EMFVEC.x*F_SGS_EMFVEC.x,out_acc_sum_squared_EMF[0])
-	  reduce_sum_add(F_SGS_EMFVEC.y*F_SGS_EMFVEC.y,out_acc_sum_squared_EMF[1])
-	  reduce_sum_add(F_SGS_EMFVEC.z*F_SGS_EMFVEC.z,out_acc_sum_squared_EMF[2])
+	    reduce_sum_add(F_SGS_EMFVEC.x*F_SGS_EMFVEC.x,out_acc_sum_squared_EMF[0])
+	    reduce_sum_add(F_SGS_EMFVEC.y*F_SGS_EMFVEC.y,out_acc_sum_squared_EMF[1])
+	    reduce_sum_add(F_SGS_EMFVEC.z*F_SGS_EMFVEC.z,out_acc_sum_squared_EMF[2])
 	}
 }
 
 Kernel normalize_fields(int count)
 {
-	if(lhydro){
-	  if(AC_lconservative__mod__hydro){
-      
-      write_normalize(mom_mean, in_acc_sum, in_acc_sum_sq, count)
-
-	    write(rho_mean,normalize_field(rho_mean,in_acc_sum_rho,in_acc_sum_sq_rho,max(1,count)))
-
-      write_normalize(TAU_STRAIN, out_acc_sum_strain, out_acc_sum_sq_strain, count)
-    
-      write_normalize(TAU_HYDRO, out_acc_sum, out_acc_sum_sq, count)
-
+    if (lhydro)
+    {
+        if (AC_lconservative__mod__hydro)
+        {
+            write_normalize(mom_mean, in_acc_sum, in_acc_sum_sq, count)
+            write(rho_mean, normalize_field(rho_mean, in_acc_sum_rho, in_acc_sum_sq_rho, max(1, count)))
+            write_normalize(TAU_STRAIN, out_acc_sum_strain, out_acc_sum_sq_strain, count)
     }
-    else{
-      write_normalize(uumean, in_acc_sum, in_acc_sum_sq, count)
-
-      write_normalize(TAU_HYDRO, out_acc_sum, out_acc_sum_sq, count)
-    }
+        else
+        {
+            write_normalize(uumean, in_acc_sum, in_acc_sum_sq, count)
+        }
+        write_normalize(TAU_HYDRO, out_acc_sum, out_acc_sum_sq, count)
 	}
 
-	if (AC_ltrain_mag__mod__training) {
-          write(uumean.x,normalize_field(uumean.x,in_acc_sum_U[0],in_acc_sum_squared_U[0],max(1,count)))
-          write(uumean.y,normalize_field(uumean.y,in_acc_sum_U[1],in_acc_sum_squared_U[1],max(1,count)))
-          write(uumean.z,normalize_field(uumean.z,in_acc_sum_U[2],in_acc_sum_squared_U[2],max(1,count)))
+	if (AC_ltrain_mag__mod__training)
+    {
+        write(uumean.x,normalize_field(uumean.x,in_acc_sum_U[0],in_acc_sum_squared_U[0],max(1,count)))
+        write(uumean.y,normalize_field(uumean.y,in_acc_sum_U[1],in_acc_sum_squared_U[1],max(1,count)))
+        write(uumean.z,normalize_field(uumean.z,in_acc_sum_U[2],in_acc_sum_squared_U[2],max(1,count)))
 
-          write(bbmean.x,normalize_field(bbmean.x,in_acc_sum_B[0],in_acc_sum_squared_B[0],max(1,count)))
-          write(bbmean.y,normalize_field(bbmean.y,in_acc_sum_B[1],in_acc_sum_squared_B[1],max(1,count)))
-          write(bbmean.z,normalize_field(bbmean.z,in_acc_sum_B[2],in_acc_sum_squared_B[2],max(1,count)))
+        write(bbmean.x,normalize_field(bbmean.x,in_acc_sum_B[0],in_acc_sum_squared_B[0],max(1,count)))
+        write(bbmean.y,normalize_field(bbmean.y,in_acc_sum_B[1],in_acc_sum_squared_B[1],max(1,count)))
+        write(bbmean.z,normalize_field(bbmean.z,in_acc_sum_B[2],in_acc_sum_squared_B[2],max(1,count)))
 
 
-          write(F_SGS_EMFVEC.x,normalize_field(F_SGS_EMFVEC.x,out_acc_sum_EMF[0],out_acc_sum_squared_EMF[0],max(1,count)))
-          write(F_SGS_EMFVEC.y,normalize_field(F_SGS_EMFVEC.y,out_acc_sum_EMF[1],out_acc_sum_squared_EMF[1],max(1,count)))
-          write(F_SGS_EMFVEC.z,normalize_field(F_SGS_EMFVEC.z,out_acc_sum_EMF[2],out_acc_sum_squared_EMF[2],max(1,count)))
+        write(F_SGS_EMFVEC.x,normalize_field(F_SGS_EMFVEC.x,out_acc_sum_EMF[0],out_acc_sum_squared_EMF[0],max(1,count)))
+        write(F_SGS_EMFVEC.y,normalize_field(F_SGS_EMFVEC.y,out_acc_sum_EMF[1],out_acc_sum_squared_EMF[1],max(1,count)))
+        write(F_SGS_EMFVEC.z,normalize_field(F_SGS_EMFVEC.z,out_acc_sum_EMF[2],out_acc_sum_squared_EMF[2],max(1,count)))
 	}
 }
 
-input int AC_count
-ComputeSteps normalize(boundconds){
-  compute_normalize_sums()
-  normalize_fields(AC_count)
+input int AC_count ComputeSteps normalize(boundconds){
+    compute_normalize_sums() 
+    normalize_fields(AC_count)
 }
 
-ComputeSteps descale_inferred_values(boundconds)
-{
-	descale_inferred_values_kernel(AC_count)
+ComputeSteps descale_inferred_values(boundconds){
+    descale_inferred_values_kernel(AC_count)
 }
-
 
 ComputeSteps calc_validation_loss(boundconds){
-	l2_sum()
+  l2_sum()
 }
 
 ComputeSteps get_inference_fields(boundconds){
-	get_averaged_fields()
+  get_averaged_fields()
 }
 
 ComputeSteps initialize_uumean(boundconds) {
