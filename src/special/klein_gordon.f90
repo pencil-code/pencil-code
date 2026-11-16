@@ -50,6 +50,7 @@
 ! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
 ! PENCILS EXPECTED lorentz, ext_force(4);
+! PENCILS EXPECTED gr_alp; gr_dalp(3); gr_gamu(6); gr_Gamd(3)
 !
 !***************************************************************
 !
@@ -368,6 +369,8 @@ module Special
   logical :: lwall_friction = .false.
   logical :: lbubble_vel_on_grid=.false.
   logical :: lbubble_pos_on_grid=.false.
+
+  logical, pointer :: lgr_metric
 
   contains
 !****************************************************************************
@@ -698,6 +701,9 @@ module Special
         if (lroot .and. lspherical_coords) print*,"dr is: ",dx
       endif
 !
+
+      call get_shared_variable('lgr_metric',lgr_metric,default_val=.false.)
+
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_klein_gordon')
         call get_shared_variable('alpfpsi',alpfpsi,caller='initialize_klein_gordon')
@@ -1670,7 +1676,7 @@ module Special
             ! 2/r d/dr, which vanishes at r=0
             del2phi = del2phi + 2.*tmp*x(l1:l2)/(x(l1:l2)**2+tini)
           else
-            call del2(f, iphi, del2phi)
+            call del2_lapse(f,p,iphi,del2phi)
           endif
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
           if (ip < 13) then
@@ -1687,7 +1693,7 @@ module Special
           df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) - &
                 pref_Hubble*Hscript*p%dpsi-pref_Vprime*p%Vprimepsi
           if (c_psi/=0 .and. .not. lpsi_hom) then
-            call del2(f, ipsi, del2psi)
+            call del2_lapse(f,p,iphi,del2phi)
             df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) + c_psi**2*pref_del2*del2psi
           endif
         endif
@@ -2734,6 +2740,36 @@ module Special
 
 !
     endsubroutine special_after_timestep
+!***********************************************************************
+    subroutine del2_lapse(f,p,k,del2f)
+!
+! Computes D^i(lapse*D^i*f).
+! In FLRW the final term on rhs is proportional to del2:
+! Divided by a^2 in cosmic time and exactly equal with conformal time.
+!
+!  16-nov-26/TP: coded
+!
+      use Sub, only: del2, grad, g2ij, contract_vec, raise_index
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
+      integer :: k
+      real, dimension(nx) :: del2f
+!
+      real, dimension(nx,3) :: df,df_up
+      real, dimension(nx,3,3) :: d2f
+      real, dimension(nx,6) :: hess
+      real, dimension(nx) :: tmp
+      integer :: i, j, l
+
+      call del2(f,k,del2f,p%gr_gamu,p%gr_Gamd,lgr=lgr_metric)
+      if(lgr_metric) then
+        call grad(f,k,df)
+        tmp = contract_vec(p%gr_dalp,df,p%gr_gamu)
+        del2f=p%gr_alp*del2f+tmp
+      endif
+!
+    endsubroutine del2_lapse
 !***********************************************************************
     subroutine get_Vpotential(f,Vpotential)
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
