@@ -7383,7 +7383,7 @@ module Energy
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_TTmaxloc=0; idiag_TTminloc=0;
-        idiag_ssmax=0; idiag_ssmin=0; idiag_ssmaxloc=0; idiag_ssmin_loc=0; idiag_gTmax=0; idiag_csmax=0
+        idiag_ssmax=0; idiag_ssmin=0; idiag_ssmaxloc=0; idiag_ssminloc=0; idiag_gTmax=0; idiag_csmax=0
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0; idiag_gTxgsom=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_heatmz=0; idiag_fradz=0
         idiag_Fenthz=0; idiag_Fenthupz=0; idiag_Fenthdownz=0
