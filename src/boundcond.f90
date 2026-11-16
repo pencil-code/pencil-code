@@ -901,6 +901,10 @@ module Boundcond
               ! BCX_DOC: ``freeze'' value, i.e. maintain initial value; antisymm wrt boundary
               call bc_freeze_var_x(topbot,j)
               call bc_sym_x(f,topbot,j,-1,REL=.true.)
+            case ('s+f')
+              ! BCX_DOC: freeze value; symm wrt boundary
+              call bc_freeze_var_x(topbot,j)
+              call bc_sym_x(f,topbot,j,+1) ! symm wrt boundary
             case ('fg')
               ! BCX_DOC: ``freeze'' value, i.e. maintain initial
               ! BCX_DOC: value at boundary, also mantaining the
