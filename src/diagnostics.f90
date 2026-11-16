@@ -621,7 +621,11 @@ module Diagnostics
                       mlength = mlength - (dlength-nlength)           ! reduce no. of post-comma digits
                     endif
                     if (mlength==0) flength=flength+1
-                    tail=merge(cform(iname)(index_c:),'',index_c>0)   ! all what comes behind the format proper: keep it
+                    if (index_c>0) then
+                      tail=cform(iname)(index_c:)                     ! all what comes behind the format proper: keep it
+                    else
+                      tail=''
+                    endif
                     cform(iname)(index_i+1:) = trim(itoa(flength))//'.'//trim(itoa(mlength))//trim(tail)
                   endif
                 endif
