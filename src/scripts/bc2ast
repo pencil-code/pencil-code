@@ -20,11 +20,13 @@ sed -e'/select  *case  *(bc'$1'12/,/end *select/ ! d' \
     -e'/case.*'nil'/,$ d' $PENCIL_HOME/src/boundcond.f90 > tmp
 }
 #
+#  make_ac_bound_cond <bc> <field> <X|Y|Z> <BOT|TOP> <index>
+#  <field> is the Astaroth field (Communicated_fields[<index>]), fbc[xyz] arrays are indexed with the Pencil index <index>.
 function make_ac_bound_cond()
 {
     #echo $1 $2 $3 $4
     sed -e'/case *( *[^ ]'$1'[^ ] *) *$/,/case/ ! d' -e'/case/ d' -e's/^ *if *( *j *== *i'$2' *)//I' -e'/^ *if/ d' -e's/^.* *\(bc_[a-zA-Z_0-9]*\) *( *f *,/\1(/' -e's/,j/,'$2'/' -e's/topbot/BOUNDARY_'$3_$4','$4'/g' -e's/\.\([a-zA-Z]*\)\./\1/' tmp | \
-    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$2']['$4']/' -e's/[A-Za-z0-9_]*=//g' |
+    sed -e's/\(fbc[xyz][a-zA-Z_0-9]*\) *( *j *,\([^)]*\))/\1['$5']['$4']/' -e's/[A-Za-z0-9_]*=//g' |
     sed -e's/(f,/(/'
 }
 #
@@ -84,6 +86,10 @@ fi
 #echo FIELDS=$nfields
 
 mvar=(`grep -m 1 'parameter *:: *mvar *=' cparam.inc | sed -e's/.*mvar *= *\([0-9][0-9]*\).*$/\1/'`)
+#  Run-time mvar: use the declared number.
+if [[ -z $mvar ]]; then
+  mvar=(`grep -m 1 'mvar_decl *= *[0-9]' cparam.inc | sed -e's/.*mvar_decl *= *\([0-9][0-9]*\).*$/\1/'`)
+fi
 if grep -q 'ldynamic_aux *= *\.true\.' cparam.inc; then
 #
 #  DYNAMIC_AUX=yes: maux_com is only known at run time. Use the declared number
@@ -107,8 +113,8 @@ if [[ ${lperi[0]} == 'T' ]]; then
 else
   boundcond_sed x
   for (( i=0; i<$(ncom); i++ )); do 
-    make_ac_bound_cond ${bot[$i]} Field\(${i}\) X BOT
-    make_ac_bound_cond ${top[$i]} Field\(${i}\) X TOP
+    make_ac_bound_cond ${bot[$i]} "Communicated_fields[${i}]" X BOT ${i}
+    make_ac_bound_cond ${top[$i]} "Communicated_fields[${i}]" X TOP ${i}
   done
   rm -f tmp
 fi
@@ -118,8 +124,8 @@ if [[ ${lperi[1]} == 'T' ]]; then
 else
   boundcond_sed y
   for (( i=0; i<$(ncom); i++ )); do 
-    make_ac_bound_cond ${bot[$i]} Field\(${i}\) Y BOT
-    make_ac_bound_cond ${top[$i]} Field\(${i}\) Y TOP
+    make_ac_bound_cond ${bot[$i]} "Communicated_fields[${i}]" Y BOT ${i}
+    make_ac_bound_cond ${top[$i]} "Communicated_fields[${i}]" Y TOP ${i}
   done
   rm -f tmp
 fi
@@ -129,8 +135,8 @@ if [[ ${lperi[2]} == 'T' ]]; then
 else
   boundcond_sed z
   for (( i=0; i<$(ncom); i++ )); do 
-    make_ac_bound_cond ${bot[$i]} Field\(${i}\) Z BOT
-    make_ac_bound_cond ${top[$i]} Field\(${i}\) Z TOP
+    make_ac_bound_cond ${bot[$i]} "Communicated_fields[${i}]" Z BOT ${i}
+    make_ac_bound_cond ${top[$i]} "Communicated_fields[${i}]" Z TOP ${i}
   done
   rm -f tmp
 fi
