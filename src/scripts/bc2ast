@@ -21,7 +21,6 @@ sed -e'/select  *case  *(bc'$1'12/,/end *select/ ! d' \
 }
 #
 #  make_ac_bound_cond <bc> <field> <X|Y|Z> <BOT|TOP> <index>
-#  <field> is the Astaroth field (Communicated_fields[<index>]), fbc[xyz] arrays are indexed with the Pencil index <index>.
 function make_ac_bound_cond()
 {
     #echo $1 $2 $3 $4
@@ -113,8 +112,8 @@ if [[ ${lperi[0]} == 'T' ]]; then
 else
   boundcond_sed x
   for (( i=0; i<$(ncom); i++ )); do 
-    make_ac_bound_cond ${bot[$i]} "Communicated_fields[${i}]" X BOT ${i}
-    make_ac_bound_cond ${top[$i]} "Communicated_fields[${i}]" X TOP ${i}
+     make_ac_bound_cond ${bot[$i]} "Field(${i})" X BOT ${i}
+     make_ac_bound_cond ${top[$i]} "Field(${i})" X TOP ${i}
   done
   rm -f tmp
 fi
@@ -124,8 +123,8 @@ if [[ ${lperi[1]} == 'T' ]]; then
 else
   boundcond_sed y
   for (( i=0; i<$(ncom); i++ )); do 
-    make_ac_bound_cond ${bot[$i]} "Communicated_fields[${i}]" Y BOT ${i}
-    make_ac_bound_cond ${top[$i]} "Communicated_fields[${i}]" Y TOP ${i}
+     make_ac_bound_cond ${bot[$i]} "Field(${i})" Y BOT ${i}
+     make_ac_bound_cond ${top[$i]} "Field(${i})" Y TOP ${i}
   done
   rm -f tmp
 fi
@@ -135,8 +134,8 @@ if [[ ${lperi[2]} == 'T' ]]; then
 else
   boundcond_sed z
   for (( i=0; i<$(ncom); i++ )); do 
-    make_ac_bound_cond ${bot[$i]} "Communicated_fields[${i}]" Z BOT ${i}
-    make_ac_bound_cond ${top[$i]} "Communicated_fields[${i}]" Z TOP ${i}
+     make_ac_bound_cond ${bot[$i]} "Field(${i})" Z BOT ${i}
+     make_ac_bound_cond ${top[$i]} "Field(${i})" Z TOP ${i}
   done
   rm -f tmp
 fi
