@@ -539,10 +539,9 @@ module Diagnostics
 !
       character, parameter:: comma=','
       character(len=256)  :: tform
-      character(len=32)   :: cform_loc,cform_ext,tail
-      integer             :: iname,index_i,index_d,index_c,iname_loc
       logical             :: lcompl
-      integer             :: dlength,flength,mlength,nlength,lenrank,lenloc
+      character(len=32)   :: cform_loc,cform_ext
+      integer             :: iname,lenrank,lenloc,iname_loc
       character(len=4), dimension(4) :: addtexts
       integer, dimension(4) :: addlengths
 !
@@ -574,6 +573,7 @@ module Diagnostics
               else
                 cform_ext = cform(iname)
               endif
+              cform_ext = adjust_format(iname)
 
               lenrank=floor(alog10(real(ncpus)))+1     !  number of digits for rank from ncpus
               lenloc = len_fmtd_expr(trim(cform_loc))  !  length of time-series entry acc. to cform_loc
@@ -600,36 +600,7 @@ module Diagnostics
               endif
 
             else
-              if (fname(iname)/=0.) then
-!
-!  Check output item for fixed-point formats: would it fit into the format?
-!  If not, extend the format.
-!
-                index_i=scan(cform(iname),'fF')
-                index_c=scan(cform(iname),',')
-                if (index_i>0) then
-                  index_d = index(cform(iname),'.')
-                  read(cform(iname)(index_i+1:index_d-1),*) flength   ! full length of the data field
-                  read(cform(iname)(index_d+1:),*) mlength            ! number of post-comma digits
-                  nlength = flength - 2 - mlength                     ! now biggest possible number of pre-comma digits (-2: comma & sign!)
-                  dlength=ceiling(alog10(abs(fname(iname))))          ! needed number of pre-comma digits
-                  if (dlength > nlength) then                         ! no fit into format
-                    if (dlength>=flength-1) then
-                      flength = dlength+1                             ! +1 for sign
-                      mlength = 0                                     ! no post-comma digits
-                    else
-                      mlength = mlength - (dlength-nlength)           ! reduce no. of post-comma digits
-                    endif
-                    if (mlength==0) flength=flength+1
-                    if (index_c>0) then
-                      tail=cform(iname)(index_c:)                     ! all what comes behind the format proper: keep it
-                    else
-                      tail=''
-                    endif
-                    cform(iname)(index_i+1:) = trim(itoa(flength))//'.'//trim(itoa(mlength))//trim(tail)
-                  endif
-                endif
-              endif
+              cform(iname) = adjust_format(iname)
               if (cform(iname)/='') tform = comma//trim(cform(iname))
               if (present(legend)) call safe_character_append(legend,noform(cname(iname)))
 
@@ -638,7 +609,54 @@ module Diagnostics
           endif
         enddo
         call safe_character_append(fform, ')')
+
+contains
+      function adjust_format(iname) result(form)
 !
+!  Adjusts fixed-point formats to the magnitude of the output item by reducing no post-comma digits down to zero,
+!  then increasing teh field width.
+!
+        integer, intent(IN) :: iname
+        character(len=32)   :: form
+
+        character(len=32)   :: tail
+        integer             :: index_i,index_d,index_c
+        integer             :: dlength,flength,mlength,nlength
+
+        form=cform(iname)
+        if (fname(iname)/=0.) then
+!
+          index_i=scan(cform(iname),'fF')
+          index_c=scan(cform(iname),',')
+          if (index_i>0) then
+            index_d = index(cform(iname),'.')
+            read(cform(iname)(index_i+1:index_d-1),*) flength   ! full length of the data field
+            read(cform(iname)(index_d+1:),*) mlength            ! number of post-comma digits
+            nlength = flength - 2 - mlength                     ! now biggest possible number of pre-comma digits (-2: comma & sign!)
+            dlength=ceiling(alog10(abs(fname(iname))))          ! needed number of pre-comma digits
+!
+!  Check output item for fixed-point formats: would it fit into the format? If not, extend the format.
+!
+            if (dlength > nlength) then                         ! no fit into format
+              if (dlength>=flength-1) then
+                flength = dlength+1                             ! +1 for sign
+                mlength = 0                                     ! no post-comma digits
+              else
+                mlength = mlength - (dlength-nlength)           ! reduce no. of post-comma digits
+              endif
+              if (mlength==0) flength=flength+1
+              if (index_c>0) then
+                tail=cform(iname)(index_c:)                     ! all what comes behind the format proper: keep it
+              else
+                tail=''
+              endif
+              form(index_i+1:) = trim(itoa(flength))//'.'//trim(itoa(mlength))//trim(tail)
+            endif
+          endif
+        endif
+
+      endfunction adjust_format
+
     endsubroutine gen_form_legend
 !***********************************************************************
     subroutine clean_line(line)
