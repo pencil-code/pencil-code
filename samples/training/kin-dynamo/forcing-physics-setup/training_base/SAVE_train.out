@@ -1,0 +1,258 @@
+***********************************************
+The Job ID: 3138732
+***********************************************
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg1134
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: start
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: a421a59f5
+ M src/astaroth/DSL/df_declares.h
+ M src/astaroth/DSL/fieldecs.h
+ M src/astaroth/DSL/handwritten_end.h
+Mon Nov 16 16:19:53 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/start.x'...
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ nxgrid, nygrid, nzgrid=          128          128          128
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ units_eos: unit_temperature=   1.2027220775801925E-008
+ units_eos: cp, lnTT0, cs0, pp0, Rgas=    1.000000        0.000000     
+    1.000000        1.000000        1.000000    
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+ diffusion: nothing (i.e. no mass diffusion)
+ initialize_density: no need to read initial stratification for lanti_shockdiffusion=F.
+ select_eos_variable: Using rho and cs2
+ resistivity: constant eta
+ init_uu: nothing
+ init_lnrho: initlnrho(1) = const_rho
+ init_lnrho: cs2bot,cs2top=    1.000000        1.000000    
+ gaunoise_vect: variable i=            5
+ gaunoise_vect: variable i=            6
+ gaunoise_vect: variable i=            7
+ Maximum used memory per cpu [MBytes] =   684.000
+ Maximum used memory [MBytes] =      684.000
+ 
+ 
+ start.x has completed successfully
+ 
+
+Mon Nov 16 16:19:58 2026
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg1134
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: run
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: a421a59f5
+ M src/astaroth/DSL/df_declares.h
+ M src/astaroth/DSL/fieldecs.h
+ M src/astaroth/DSL/handwritten_end.h
+Mon Nov 16 16:19:58 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x'...
+Mon Nov 16 16:20:03 2026 : CONFIG_FILE: data/training/config_torchfort.yaml
+Mon Nov 16 16:20:03 2026 : Model_NAME: stationary
+Mon Nov 16 16:20:04 2026 : CREATED DISTRIBUTED TRAINING
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+WARNING:  run: quad precision not supported, switch to double!
+WARNING:  run: quad precision suppressed!
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ The verbose level is ip=           14  (ldebug=  F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=          128          128          128
+ Lx, Ly, Lz=    6.283185        6.283185        6.283185    
+       Vbox=    248.0502    
+ input_persist_forcing:     0.000000        0.000000        0.000000    
+ input_persist_forcing:    -10.00000    
+ rsnap: read snapshot var.dat in    2.9544371435913153E-002  seconds
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc,iz2_loc, (video files) = 4 4 4 131                                                                       
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ units_eos: unit_temperature=   1.2027220775801925E-008
+ units_eos: cp, lnTT0, cs0, pp0, Rgas=    1.000000        0.000000     
+    1.000000        1.000000        1.000000    
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  initialize_density: enabled upwinding for linear density!
+ diffusion: nothing (i.e. no mass diffusion)
+ initialize_density: no need to read initial stratification for lanti_shockdiffusion=F.
+ select_eos_variable: Using rho and cs2
+ resistivity: constant eta
+ viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+acCompile: Compiling Astaroth; logging to /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/ac_compilation.log
+Mon Nov 16 16:21:34 2026 : Done setupConfig && acCompile
+Mon Nov 16 16:21:34 2026 : acGridInit: n[xyz]grid: (128,128,128) n[xyz]local (128,128,128)
+Mon Nov 16 16:21:34 2026 : acGridInit: Creating device
+Mon Nov 16 16:21:34 2026 : acGridInit: decomp: (1,1,1)
+Mon Nov 16 16:21:34 2026 : acGridInit: Stencil order: 6
+Mon Nov 16 16:21:34 2026 : acGridInit: Done
+
+Started autotuning: watch progress in ac_autotuning.log
+Mon Nov 16 16:21:36 2026 : DONE initializeGPU
+Mon Nov 16 16:21:36 2026 : Doing training
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+terminate called after throwing an instance of 'c10::Error'
+  what():  forward() is missing value for argument 'B_x'. Declaration: forward(__torch__.kindynamo_unet.KinDynamo_UNet self, Tensor U_x, Tensor B_x) -> Tensor
+Exception raised from checkAndNormalizeInputs at /pytorch/aten/src/ATen/core/function_schema_inl.h:413 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0xd4 (0x400050ab5424 in /projappl/project_2016901/sgiridha/libtorch/lib/libc10.so)
+frame #1: c10::detail::torchCheckFail(char const*, char const*, unsigned int, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) + 0xe4 (0x400050a6c780 in /projappl/project_2016901/sgiridha/libtorch/lib/libc10.so)
+frame #2: <unknown function> + 0x14b3ca0 (0x40005f013ca0 in /projappl/project_2016901/sgiridha/libtorch/lib/libtorch_cpu.so)
+frame #3: torch::jit::Method::operator()(std::vector<c10::IValue, std::allocator<c10::IValue> >, std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, c10::IValue, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, c10::IValue> > > const&) const + 0x144 (0x400061dbb194 in /projappl/project_2016901/sgiridha/libtorch/lib/libtorch_cpu.so)
+frame #4: torch::jit::Module::forward(std::vector<c10::IValue, std::allocator<c10::IValue> >, std::unordered_map<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, c10::IValue, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, c10::IValue> > > const&) + 0xe4 (0x40004b8039d4 in /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so)
+frame #5: torchfort::ModelWrapper::forward(std::vector<at::Tensor, std::allocator<at::Tensor> > const&) const + 0x230 (0x40004b7ffe20 in /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so)
+frame #6: torchfort::train_multiarg(char const*, void*, void*, float*, void*, CUstream_st*) + 0x390 (0x40004b822430 in /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so)
+frame #7: torchfort_train_multiarg + 0xc (0x40004b81617c in /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so)
+frame #8: torch_train_multiarg_CAPI(int*, std::vector<std::pair<float*, int>, std::allocator<std::pair<float*, int> > > const&, std::vector<std::pair<float*, int>, std::allocator<std::pair<float*, int> > > const&, float*, char const*) + 0x80 (0x40003fff4640 in src/astaroth/libastaroth_sgl.so)
+frame #9: tf_train_c_api + 0x420 (0x40003ffe4220 in src/astaroth/libastaroth_sgl.so)
+frame #10: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xaa435c]
+frame #11: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xaa06ac]
+frame #12: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xaaa024]
+frame #13: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xaa8970]
+frame #14: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xac0dd8]
+frame #15: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xab7bb8]
+frame #16: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xaa55c8]
+frame #17: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xaa5c34]
+frame #18: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xae04a0]
+frame #19: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xae6aa4]
+frame #20: <unknown function> + 0x1b20c (0x40004ff0b20c in /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so)
+frame #21: <unknown function> + 0x577f8 (0x40004ff477f8 in /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so)
+frame #22: <unknown function> + 0x43aa0 (0x40004ff33aa0 in /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so)
+frame #23: <unknown function> + 0x1c2e0 (0x40004ff0c2e0 in /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so)
+frame #24: __kmpc_fork_call + 0x80 (0x40004ff23084 in /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so)
+frame #25: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xae535c]
+frame #26: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0xae6c84]
+frame #27: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0x40a5b4]
+frame #28: <unknown function> + 0x27540 (0x400050387540 in /lib64/libc.so.6)
+frame #29: __libc_start_main + 0x98 (0x400050387618 in /lib64/libc.so.6)
+frame #30: /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x() [0x4082b0]
+
+[rg1134:4086434] *** Process received signal ***
+[rg1134:4086434] Signal: Aborted (6)
+[rg1134:4086434] Signal code:  (-6)
+[rg1134:4086434] [ 0] linux-vdso.so.1(__kernel_rt_sigreturn+0x0)[0x40003fa307e8]
+[rg1134:4086434] [ 1] /lib64/libc.so.6(+0x82d68)[0x4000503e2d68]
+[rg1134:4086434] [ 2] /lib64/libc.so.6(raise+0x1c)[0x40005039abfc]
+[rg1134:4086434] [ 3] /lib64/libc.so.6(abort+0xe8)[0x400050387274]
+[rg1134:4086434] [ 4] /lib64/libstdc++.so.6(_ZN9__gnu_cxx27__verbose_terminate_handlerEv+0x1a0)[0x400050854c60]
+[rg1134:4086434] [ 5] /lib64/libstdc++.so.6(+0xa25bc)[0x4000508525bc]
+[rg1134:4086434] [ 6] /lib64/libstdc++.so.6(+0xa2620)[0x400050852620]
+[rg1134:4086434] [ 7] /lib64/libstdc++.so.6(+0xa2904)[0x400050852904]
+[rg1134:4086434] [ 8] /projappl/project_2016901/sgiridha/libtorch/lib/libc10.so(_ZN3c106detail14torchCheckFailEPKcS2_jRKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE+0x114)[0x400050a6c7b0]
+[rg1134:4086434] [ 9] /projappl/project_2016901/sgiridha/libtorch/lib/libtorch_cpu.so(+0x14b3ca0)[0x40005f013ca0]
+[rg1134:4086434] [10] /projappl/project_2016901/sgiridha/libtorch/lib/libtorch_cpu.so(_ZNK5torch3jit6MethodclESt6vectorIN3c106IValueESaIS4_EERKSt13unordered_mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES4_St4hashISD_ESt8equal_toISD_ESaISt4pairIKSD_S4_EEE+0x144)[0x400061dbb194]
+[rg1134:4086434] [11] /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so(_ZN5torch3jit6Module7forwardESt6vectorIN3c106IValueESaIS4_EERKSt13unordered_mapINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES4_St4hashISD_ESt8equal_toISD_ESaISt4pairIKSD_S4_EEE+0xe4)[0x40004b8039d4]
+[rg1134:4086434] [12] /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so(_ZNK9torchfort12ModelWrapper7forwardERKSt6vectorIN2at6TensorESaIS3_EE+0x230)[0x40004b7ffe20]
+[rg1134:4086434] [13] /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so(_ZN9torchfort14train_multiargEPKcPvS2_PfS2_P11CUstream_st+0x390)[0x40004b822430]
+[rg1134:4086434] [14] /projappl/project_2016901/sgiridha/torchfort-install/lib/libtorchfort.so(torchfort_train_multiarg+0xc)[0x40004b81617c]
+[rg1134:4086434] [15] src/astaroth/libastaroth_sgl.so(_Z25torch_train_multiarg_CAPIPiRKSt6vectorISt4pairIPfiESaIS3_EES7_S2_PKc+0x80)[0x40003fff4640]
+[rg1134:4086434] [16] src/astaroth/libastaroth_sgl.so(tf_train_c_api+0x420)[0x40003ffe4220]
+[rg1134:4086434] [17] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xaa435c]
+[rg1134:4086434] [18] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xaa06ac]
+[rg1134:4086434] [19] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xaaa024]
+[rg1134:4086434] [20] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xaa8970]
+[rg1134:4086434] [21] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xac0dd8]
+[rg1134:4086434] [22] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xab7bb8]
+[rg1134:4086434] [23] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xaa55c8]
+[rg1134:4086434] [24] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xaa5c34]
+[rg1134:4086434] [25] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xae04a0]
+[rg1134:4086434] [26] /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/forcing-physics-setup/training_base/./src/run.x[0xae6aa4]
+[rg1134:4086434] [27] /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so(+0x1b20c)[0x40004ff0b20c]
+[rg1134:4086434] [28] /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so(+0x577f8)[0x40004ff477f8]
+[rg1134:4086434] [29] /appl/soft/manual/general/aarch64/nvhpc/Linux_aarch64/26.3/compilers/lib/libnvomp.so(+0x43aa0)[0x40004ff33aa0]
+[rg1134:4086434] *** End of error message ***
+srun: error: rg1134: task 0: Aborted
+srun: Terminating StepId=3138732.1
+'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x' failed: 
+Aborting.
