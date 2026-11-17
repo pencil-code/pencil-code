@@ -130,6 +130,8 @@ module Sub
   public :: box_muller_transform
   public :: get_astaroth_field_name
 
+  public :: tensor_product
+
 
 !
   interface poly                ! Overload the `poly' function
@@ -9933,7 +9935,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
 !  Full contraction a_i b_i of two three-vectors, where g^ij is used for raising
 !
-!  13-oct-26/TP: coded
+!  16-nov-26/TP: coded
 !
       real, dimension(:,:), intent(in) :: a, b
       real, dimension(:,:), intent(in) :: g_upper
@@ -9945,6 +9947,32 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       contract = contract_vec_upper_lower(au,b)
 !
     endfunction contract_vec_lower_lower
+!***********************************************************************
+    subroutine tensor_product(Sij,q,ladd) 
+!
+!  Full contraction a_i b_i of two three-vectors, where g^ij is used for raising
+!
+!  17-nov-26/TP: coded
+!
+      use General, only: loptest
+
+      real, dimension(nx,6), intent(inout) :: Sij
+      real, dimension(nx,3), intent(in) :: q
+      logical, optional, intent(in) :: ladd
+      integer :: i,j
+!
+
+      if(loptest(ladd)) then
+        do i=1,3; do j=i,3
+          Sij(:,ij_table(i,j))=Sij(:,ij_table(i,j))+q(:,i)*q(:,j)
+        enddo; enddo
+      else
+        do i=1,3; do j=i,3
+          Sij(:,ij_table(i,j))=q(:,i)*q(:,j)
+        enddo; enddo
+      endif
+!
+    endsubroutine tensor_product
 !***********************************************************************
 subroutine solve3x3(A, b, x)
 !
