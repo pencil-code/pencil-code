@@ -140,11 +140,6 @@ program start
 !  f is allocated after the registration of the variables, which may
 !  increase mfarray (DYNAMIC_AUX=yes).
 !
-  if (lmodify .or. nfilter/=0) then
-    allocate(df(mx,my,mz,mvar),STAT=stat)
-    if (stat>0) call fatal_error('start','Could not allocate df')
-    df=huge(1.0)
-  endif
 !
 !  Read initialization parameters from "start.in".
 !
@@ -172,6 +167,12 @@ program start
 
   if (lparticles) call particles_register_modules
   call farray_finalize_registration
+!
+  if (lmodify .or. nfilter/=0) then
+    allocate(df(mx,my,mz,mvar),STAT=stat)
+    if (stat>0) call fatal_error('start','Could not allocate df')
+    df=huge(1.0)
+  endif
   call parse_bc_pars
 !
 ! Initialization dependent on mvar should come after registeration
