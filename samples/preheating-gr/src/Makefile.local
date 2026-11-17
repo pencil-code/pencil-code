@@ -6,6 +6,7 @@ MPICOMM  = mpicomm
 ENTROPY  = noentropy
 MAGNETIC = nomagnetic
 HYDRO    = nohydro
+VISCOSITY = noviscosity
 DENSITY  = nodensity
 EOS      = noeos
 FOURIER  = fourier_fftpack
