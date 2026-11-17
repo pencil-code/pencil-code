@@ -17,7 +17,8 @@
 !  For the wave tests the error with respect to the exact solution is
 !  available as diagnostics (gerrij, alperr).
 !
-!  Vacuum only, Cartesian coordinates, CPU only.
+!  Metric can be sourced by hydro,density,magnetic and klein_gordon
+!  Cartesian coordinates only.
 !
 !  13-oct-26: coded
 !
@@ -32,6 +33,8 @@
 !
 ! PENCILS PROVIDED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_dbeta(3,3)
 ! PENCILS PROVIDED gr_gamu(6); gr_dgam(6,3); gr_Kij(6)
+! PENCILS EXPECTED phi; dphi; gphi(3); psi; dpsi; gpsi(3); Vpotential
+! PENCILS EXPECTED gr_Gamd(3)
 !
 !***************************************************************
 !
@@ -84,6 +87,8 @@ module Special
 !
 !
   integer :: iTij=0
+  logical :: lscalar_src=.false., lscalar2_src=.false.
+  real :: Khm=0.
   logical, pointer :: lgr_backreaction
 !
   logical :: lshift=.true.
@@ -124,6 +129,11 @@ module Special
   integer :: idiag_chimin=0    ! DIAG_DOC: $\min\chi$
   integer :: idiag_Khrms=0     ! DIAG_DOC: $\left<\hat K^2\right>^{1/2}$
   integer :: idiag_betarms=0   ! DIAG_DOC: $\left<\beta^2\right>^{1/2}$
+  integer :: idiag_sqrtgm=0    ! DIAG_DOC: $\left<\sqrt{\gamma}\right>$
+  integer :: idiag_sqrtgKm=0   ! DIAG_DOC: $\left<\sqrt{\gamma}K\right>$
+  integer :: idiag_sqrtgEm=0   ! DIAG_DOC: $\left<\sqrt{\gamma}E\right>$
+  integer :: idiag_hamnm=0     ! DIAG_DOC: $\left<{\cal H}/[{\cal H}]\right>$, $[{\cal H}]$ = root sum of squares of its terms
+  integer :: idiag_hamnrms=0   ! DIAG_DOC: $\left<({\cal H}/[{\cal H}])^2\right>^{1/2}$
   integer :: idiag_alperr=0    ! DIAG_DOC: $\left<|\alpha-\alpha_{\rm exact}|\right>$
   integer :: idiag_gerrmax=0   ! DIAG_DOC: $\max|\gamma_{ij}-\gamma_{ij}^{\rm exact}|$
   integer, dimension(6) :: idiag_gerr=0 ! DIAG_DOC: $\left<|\gamma_{ij}-\gamma_{ij}^{\rm exact}|\right>$
@@ -184,7 +194,7 @@ module Special
           'z4c only works in Cartesian coordinates')
 !
       select case (lapse_type)
-      case ('1+log','harmonic','frozen')
+      case ('1+log','1+log-mean','harmonic','frozen')
       case default
         call fatal_error('initialize_special','no such lapse_type: '//trim(lapse_type))
       endselect
@@ -203,6 +213,9 @@ module Special
 !
       iTij=farray_index_by_name('Tij')
       call get_shared_variable('lgr_backreaction',lgr_backreaction,default_val=.false.)
+!
+      lscalar_src=lgr_backreaction .and. farray_index_by_name('dphi')>0
+      lscalar2_src=lscalar_src .and. farray_index_by_name('dpsi')>0
 !
 !  Wave vector and polarization of the wave initial data:
 !  plus polarization e_ij = p_i p_j - q_i q_j with p, q orthogonal to k.
@@ -367,16 +380,29 @@ module Special
 !
 !  Metric pencils from special/z4c for the energy equation in curved spacetime.
 !
+      if(lgr_backreaction) then
+        lpenc_requested(i_gr_gamu)=.true.
+      endif
+
       if (ldensity) then
         lpenc_requested(i_gr_sqrtg)=.true.
         lpenc_requested(i_gr_alp)=.true.
         lpenc_requested(i_gr_dalp)=.true.
         lpenc_requested(i_gr_beta)=.true.
-        lpenc_requested(i_gr_gamu)=.true.
         lpenc_requested(i_gr_Kij)=.true.
       endif
 !
 !  Metric pencils from special/z4c for the momentum equation in curved spacetime.
+!
+      if (lscalar_src) then
+        lpenc_requested(i_dphi)=.true.
+        lpenc_requested(i_gphi)=.true.
+        lpenc_requested(i_Vpotential)=.true.
+        if (lscalar2_src) then
+          lpenc_requested(i_dpsi)=.true.
+          lpenc_requested(i_gpsi)=.true.
+        endif
+      endif
 !
       if (lhydro) then
         lpenc_requested(i_gr_sqrtg)=.true.
@@ -398,12 +424,23 @@ module Special
 !  13-oct-26/Claude
 !
       use Sub, only: sym_inverse, contract
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension(nx,6) :: gt, gtu
       real, dimension(nx) :: detg, trA
       integer :: i, mm, nn
+      real :: Khsum
+!
+!  Volume (coordinate) average of Khat for the lapse condition
+!  d_t alpha = -2 alpha (Khat - <Khat>), e.g. Giblin & Tishue 2019, eq. (26).
+!
+      if (lapse_type=='1+log-mean') then
+        Khsum=sum(f(l1:l2,m1:m2,n1:n2,iKh))
+        call mpiallreduce_sum(Khsum,Khm)
+        Khm=Khm/nwgrid
+      endif
 !
       if (.not.lenforce_algebraic) return
 !
@@ -432,17 +469,20 @@ module Special
 !  Geometric quantities shared by the right-hand side and the diagnostics.
 !
 !  13-oct-26/Claude: coded
+!  17-nov-26/TP: checked and cleaned
 !
       use Sub, only: grad, g2ij, sym_inverse, contract,covariant_g2ij
       use Sub, only: lower_first_index,raise_first_index,raise_second_index
+      use Sub, only: tensor_product, multsv_mn_add
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
       real, dimension(nx,6) :: DDchi
-      real, dimension(nx) :: detg, lapchi, dchi2, dchida, rhs
+      real, dimension(nx) :: detg, lapchi, dchi2, dchida, rhs, pi2, grad2
       real, dimension(nx,3,3) :: Smix
-      real, dimension(nx,6) :: gam
+      real, dimension(nx,6) :: gam, Sij
+      real, dimension(nx) :: lagr
       integer :: i, j, k, l, mm, ij
 !
 !  Variables and their derivatives.
@@ -579,28 +619,67 @@ module Special
         enddo
       endif
 !
-!  Matter sources; S = gamma^ij S_ij = chi gt^ij S_ij.
+!  Matter sources E, S_i, S_ij (lower indices), summed over the fluid of
+!  hydro and the scalar fields of klein_gordon; S = gamma^ij S_ij = chi gt^ij S_ij.
 !
       if (lgr_backreaction) then
-        do i=1,3; do j=1,3
-          Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)+p%gr_beta(:,j)*f(l1:l2,m,n,iux+i-1))/p%gr_alp
-        enddo; enddo
+        q%E=0.; q%Sv=0.; q%Sij=0.
         do i=1,6
           gam(:,i)=q%gt(:,i)/q%chi
         enddo
-
-        call raise_second_index(Smix,p%gr_gamu,q%Suu)
-        call lower_first_index(Smix,gam,q%Sij)
-        do i=1,6
-          q%Sij(:,i) = q%Sij(:,i)/p%gr_sqrtg 
-        enddo
-
-        q%E=f(l1:l2,m,n,irho)/p%gr_sqrtg
-        do i=1,3
-          q%Sv(:,i)=f(l1:l2,m,n,iux-1+i)/p%gr_sqrtg
-        enddo
+!
+!  Fluid: from the conserved variables sqrt(gamma)E (irho), sqrt(gamma)S_i (iux)
+!  and the flux T^j_i = sqrt(gamma)(alpha S^j_i - beta^j S_i) of hydro.
+!
+        if (lhydro) then
+          do i=1,3; do j=1,3
+            Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)+p%gr_beta(:,j)*f(l1:l2,m,n,iux+i-1))/p%gr_alp
+          enddo; enddo
+          call raise_second_index(Smix,p%gr_gamu,q%Suu)
+          call lower_first_index(Smix,gam,Sij)
+          do i=1,6
+            q%Sij(:,i)=q%Sij(:,i)+Sij(:,i)/p%gr_sqrtg
+          enddo
+          q%E=q%E+f(l1:l2,m,n,irho)/p%gr_sqrtg
+          do i=1,3
+            q%Sv(:,i)=q%Sv(:,i)+f(l1:l2,m,n,iux-1+i)/p%gr_sqrtg
+          enddo
+        endif
+!
+!  Scalar fields of klein_gordon (dphi = Pi = n^mu d_mu phi), summed over phi and psi:
+!    E = Pi^2/2 + gamma^ij d_i phi d_j phi/2 + V,  S_i = -Pi d_i phi,
+!    S_ij = d_i phi d_j phi + gamma_ij (Pi^2/2 - gamma^kl d_k phi d_l phi/2 - V).
+!  The pencils come from calc_pencils_special of klein_gordon, which must
+!  therefore be listed before z4c in SPECIAL.
+!
+        if (lscalar_src) then
+          pi2=p%dphi**2
+          call tensor_product(Sij,p%gphi)
+          call multsv_mn_add(p%dphi,p%gphi,q%Sv,-1.0)
+          if (lscalar2_src) then
+            pi2=pi2+p%dpsi**2
+            call tensor_product(Sij,p%gpsi,ladd=.true.)
+            call multsv_mn_add(p%dpsi,p%gpsi,q%Sv,-1.0)
+          endif
+          grad2=contract(p%gr_gamu,Sij)
+          q%E=q%E+0.5*pi2+0.5*grad2+p%Vpotential
+          lagr=0.5*pi2-0.5*grad2-p%Vpotential
+          do i=1,6
+            q%Sij(:,i)=q%Sij(:,i)+Sij(:,i)+gam(:,i)*lagr
+          enddo
+        endif
+!
         q%Strace=contract(p%gr_gamu,q%Sij)
         q%ham=q%ham-16*pi*q%E
+      endif
+!
+      if(lpencil(i_gr_gamd)) then
+        do l=1,3
+          p%gr_Gamd(:,l)=-0.5*contract(p%gr_gamu,p%gr_dgam(:,:,l))
+          do j=1,3; do i=1,3
+            p%gr_Gamd(:,l)=p%gr_Gamd(:,l)+p%gr_gamu(:,ij_table(i,j))*p%gr_dgam(:,ij_table(j,l),i)
+          enddo; enddo
+        enddo
       endif
 !
     endsubroutine calc_pencils_special
@@ -608,7 +687,6 @@ module Special
     subroutine dspecial_dt(f,df,p)
 !
 !  Right-hand side of the Z4c equations, GR-Athena++ eqs. (8)-(13) and (22)
-!  without matter.
 !
 !  13-oct-26/Claude: coded
 !
@@ -716,6 +794,7 @@ module Special
 !
       select case (lapse_type)
       case ('1+log');    rhs=-2*q%alp*q%Kh
+      case ('1+log-mean'); rhs=-2*q%alp*(q%Kh-Khm)
       case ('harmonic'); rhs=-harmonic_f*q%alp**2*q%Kh
       case ('frozen');   rhs=0.
       endselect
@@ -756,7 +835,7 @@ module Special
 !
       if (lupdate_courant_dt) then
         select case (lapse_type)
-        case ('1+log'); tmp=max(1.,sqrt(2/q%alp))
+        case ('1+log','1+log-mean'); tmp=max(1.,sqrt(2/q%alp))
         case ('harmonic'); tmp=max(1.,sqrt(harmonic_f))
         case default;   tmp=1.
         endselect
@@ -1036,6 +1115,22 @@ module Special
         call sum_mn_name(q%Kh**2,idiag_Khrms,lsqrt=.true.)
         call sum_mn_name(sum(q%beta**2,2),idiag_betarms,lsqrt=.true.)
 !
+!
+!
+        if (idiag_sqrtgm/=0.or.idiag_sqrtgKm/=0.or.idiag_sqrtgEm/=0) then
+          tmp=q%chi**(-1.5)
+          call sum_mn_name(tmp,idiag_sqrtgm)
+          call sum_mn_name(tmp*q%Ktr,idiag_sqrtgKm)
+          if (lgr_backreaction) call sum_mn_name(tmp*q%E,idiag_sqrtgEm)
+        endif
+        if (idiag_hamnm/=0.or.idiag_hamnrms/=0) then
+          tmp=q%trR**2+q%AA**2+((2./3.)*q%Ktr**2)**2
+          if (lgr_backreaction) tmp=tmp+(16*pi*q%E)**2
+          tmp=q%ham/sqrt(max(tmp,tini))
+          call sum_mn_name(tmp,idiag_hamnm)
+          call sum_mn_name(tmp**2,idiag_hamnrms,lsqrt=.true.)
+        endif
+!
 !  Error with respect to the exact solution (wave tests).
 !
         if (any(idiag_gerr/=0).or.idiag_gerrmax/=0.or.idiag_alperr/=0) then
@@ -1122,6 +1217,7 @@ module Special
         idiag_Gconrms=0; idiag_alpm=0; idiag_alpmin=0; idiag_alpmax=0
         idiag_chimin=0; idiag_Khrms=0; idiag_betarms=0; idiag_alperr=0
         idiag_gerrmax=0; idiag_gerr=0; idiag_gmx=0; idiag_alpmx=0; idiag_hammx=0
+        idiag_sqrtgm=0; idiag_sqrtgKm=0; idiag_sqrtgEm=0; idiag_hamnm=0; idiag_hamnrms=0
       endif
 !
       do iname=1,nname
@@ -1139,6 +1235,11 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'betarms',idiag_betarms)
         call parse_name(iname,cname(iname),cform(iname),'alperr',idiag_alperr)
         call parse_name(iname,cname(iname),cform(iname),'gerrmax',idiag_gerrmax)
+        call parse_name(iname,cname(iname),cform(iname),'sqrtgm',idiag_sqrtgm)
+        call parse_name(iname,cname(iname),cform(iname),'sqrtgKm',idiag_sqrtgKm)
+        call parse_name(iname,cname(iname),cform(iname),'sqrtgEm',idiag_sqrtgEm)
+        call parse_name(iname,cname(iname),cform(iname),'hamnm',idiag_hamnm)
+        call parse_name(iname,cname(iname),cform(iname),'hamnrms',idiag_hamnrms)
         do i=1,6
           call parse_name(iname,cname(iname),cform(iname),'gerr'//csym(i),idiag_gerr(i))
         enddo
