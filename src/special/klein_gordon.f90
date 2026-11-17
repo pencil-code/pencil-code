@@ -108,7 +108,7 @@ module Special
   real :: delta_phi_prefactor=1.0,lambda_phi_prefactor=1.0
   real :: chi_quartic=impossible   ! normalized variable for quartic potential
   real :: chi_sextic=impossible ! normalized variable for sextic potential wihtout a cubic term
-  real :: c_sextic=0. !PAR_DOC: Coefficient of phi^6/6 of the sextic potential (set from chi_sextic with lphi_normalized_units)
+  real :: c_sextic=0. !PAR_DOC: Coefficient of $\phi^6/6$ of the sextic potential (set from chi_sextic with lphi_normalized_units)
   real :: deltaV=impossible !Difference between the potential at the false and true vacuum
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
@@ -176,8 +176,8 @@ module Special
     !PAR_DOC: Cutting refers to the approximation done in https://arxiv.org/pdf/1802.05712,
     !PAR_DOC: where the tension is calculated from the degenerate potential close to the true
     !PAR_DOC: non-degenerate one.
-    !PAR_DOC: Thin_wall_integral computes the thin-wall tension \int_0^1 sqrt(2 V_deg) dphi numerically, where V_deg
-    !PAR_DOC: is the potential made degenerate by adding deltaV*(3phi^2-2phi^3), which keeps the vacua at 0 and 1.
+    !PAR_DOC: Thin_wall_integral computes the thin-wall tension $\int_0^1 \sqrt(2 V_{deg}) d\phi$ numerically, where V_deg
+    !PAR_DOC: is the potential made degenerate by adding deltaV*(3phi$^2$-2phi$^3$), which keeps the vacua at 0 and 1.
     !PAR_DOC: Valid for any potential with lphi_normalized_units, unlike wall_thickness, which assumes the tanh wall
     !PAR_DOC: of the quartic potential.
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -235,7 +235,7 @@ module Special
     !PAR_DOC: Quite bad, would not recommend. The original intention was to fix velocity when having Langevin noise, but then
     !PAR_DOC: it is better to use the ODE to evolve the wall velocity to get rid of grid effects due to fluctuations.
   logical :: lradial_ensemble = .false. !PAR_DOC: Treat each y-row of a cartesian (x,y) grid as an independent radially
-    !PAR_DOC: symmetric 1d run with x as the radius (the 2/r term and the 4 pi r^2 dr volume are added here).
+    !PAR_DOC: symmetric 1d run with x as the radius (the $2/r$ term and the $4 \pi r^2 \, dr$ volume are added here).
     !PAR_DOC: The y direction only labels the realizations, which differ only by their Langevin noise.
     !PAR_DOC: E.g. nxgrid=1024, nygrid=100, nzgrid=1 runs 100 radial runs side by side.
     !PAR_DOC: With lbubble_size_ode each realization gets its own R and Rdot, written to data/wall_ensemble.dat.

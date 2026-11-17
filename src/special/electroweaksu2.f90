@@ -74,7 +74,7 @@ module Special
   real, dimension(3) :: relhel_dWW=0.0, kgaussian_dWW=0.0
   real :: weight_longitudinalW=2.0, eta_WW=0.0
   real :: kappa_GammaW=0.0 !PAR_DOC: damping rate of the GLM (Dedner/Komissarov) cleaning field
-            !PAR_DOC: psi^a = GammaW^a - div W^a, so that constraint violations decay as exp(-kappa t/2)
+            !PAR_DOC: $psi^a = GammaW^a - div W^a$, so that constraint violations decay as exp(-kappa t/2)
 !   logical :: luse_scale_factor_in_sigma=.false., lapply_Gamma_corr=.true.
 !   logical, pointer :: lohm_evolve
   real :: coupl_gw=.65    ! electroweak SU(2) x U(1) coupling of Higgs to SU(2)
