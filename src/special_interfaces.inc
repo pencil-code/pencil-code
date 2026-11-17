@@ -117,6 +117,11 @@
       integer, dimension(:,:) :: ineargrid
     endsubroutine iface_special_particles_after_dtsub
 !
+    subroutine iface_special_insert_particles(fp,npar_low,npar_high)
+      real, dimension(:,:) :: fp
+      integer, intent(in) :: npar_low, npar_high
+    endsubroutine iface_special_insert_particles
+!
 !  special_before_boundary, special_before_boundary_diagnostics, special_before_boundary_shared,
 !  special_after_boundary:
 !

@@ -68,9 +68,10 @@
                           I_LOAD_VARIABLES_TO_GPU_SPECIAL=40, &
                           I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS=41, &
                           I_GET_FSLICES_SPECIAL=42, &
-                          I_SPECIAL_BEFORE_BOUNDARY_SHARED=43
+                          I_SPECIAL_BEFORE_BOUNDARY_SHARED=43, &
+                          I_SPECIAL_INSERT_PARTICLES=44
     
-    integer, parameter :: n_subroutines=43
+    integer, parameter :: n_subroutines=44
 !
     character(LEN=256) :: special_modules_list = ''
     character(LEN=128), dimension(n_subroutines) :: special_subroutines=(/ &
@@ -116,7 +117,8 @@
                            'load_variables_to_gpu_special       ', &
                            'special_before_boundary_diagnostics ', &
                            'get_fslices_special                 ', &
-                           'special_before_boundary_shared      '  &
+                           'special_before_boundary_shared      ', &
+                           'special_insert_particles            '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -162,6 +164,7 @@
       procedure(iface_input_persist_special_id),       pointer, nopass :: input_persist_special_id
       procedure(iface_output_persistent_special),      pointer, nopass :: output_persistent_special
       procedure(iface_special_particles_after_dtsub),  pointer, nopass :: special_particles_after_dtsub
+      procedure(iface_special_insert_particles),       pointer, nopass :: special_insert_particles
       procedure(iface_calc_diagnostics_special),       pointer, nopass :: calc_diagnostics_special
       procedure(iface_special_ode),                    pointer, nopass :: calc_ode_diagnostics_special
       procedure(iface_special_ode),                    pointer, nopass :: prep_rhs_special
@@ -273,6 +276,7 @@
       call c_f_procpointer(hook(i,I_INPUT_PERSIST_SPECIAL_ID),     hooks(i)%input_persist_special_id)
       call c_f_procpointer(hook(i,I_OUTPUT_PERSISTENT_SPECIAL),    hooks(i)%output_persistent_special)
       call c_f_procpointer(hook(i,I_SPECIAL_PARTICLES_AFTER_DTSUB),hooks(i)%special_particles_after_dtsub)
+      call c_f_procpointer(hook(i,I_SPECIAL_INSERT_PARTICLES),hooks(i)%special_insert_particles)
       call c_f_procpointer(hook(i,I_CALC_DIAGNOSTICS_SPECIAL),     hooks(i)%calc_diagnostics_special)
       call c_f_procpointer(hook(i,I_CALC_ODE_DIAGNOSTICS_SPECIAL), hooks(i)%calc_ode_diagnostics_special)
       call c_f_procpointer(hook(i,I_PREP_RHS_SPECIAL),             hooks(i)%prep_rhs_special)
@@ -923,6 +927,24 @@
       enddo
 !
     endsubroutine special_particles_after_dtsub
+!***********************************************************************
+    subroutine special_insert_particles(fp,npar_low,npar_high)
+!
+!  Properties of the parcels npar_low..npar_high just created by the particle
+!  module for initxxp='special' (see nospecial.f90).
+!
+!  12-nov-26/nils: coded
+!
+      real, dimension(:,:) :: fp
+      integer, intent(in) :: npar_low, npar_high
+!
+      integer :: i
+!
+      do i=1,n_special_modules
+        call hooks(i)%special_insert_particles(fp,npar_low,npar_high)
+      enddo
+!
+    endsubroutine special_insert_particles
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
 !

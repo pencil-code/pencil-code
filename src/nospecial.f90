@@ -697,6 +697,24 @@ module Special
 !
     endsubroutine special_particles_after_dtsub
 !***********************************************************************
+    subroutine special_insert_particles(fp,npar_low,npar_high)
+!
+!  Set the properties of the parcels npar_low..npar_high that the particle
+!  module has just created on this process for initxxp='special' (position,
+!  and optionally velocity, radius, ...).  Called from insert_particles
+!  (continuous insertion) on the process that inserts; initvvp and initap
+!  must be 'nothing' for what the special module sets to survive.
+!
+!  12-nov-26/nils: coded
+!
+      real, dimension(:,:) :: fp
+      integer, intent(in) :: npar_low, npar_high
+!
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(npar_low,npar_high)
+!
+    endsubroutine special_insert_particles
+!***********************************************************************
     subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !
 !  Possibility to modify the f and df after df is updated.
@@ -800,6 +818,7 @@ module Special
       procedure(iface_special_calc_particles), pointer :: p14
       procedure(iface_special_particles_bfre_bdary), pointer :: p15
       procedure(iface_special_particles_after_dtsub), pointer :: p16
+      procedure(iface_special_insert_particles), pointer :: p27
       procedure(iface_special_boundary), pointer :: p17
       procedure(iface_special_boundconds), pointer :: p18
       procedure(iface_special_after_timestep), pointer :: p19
@@ -836,6 +855,7 @@ module Special
       p14 => special_calc_particles
       p15 => special_particles_bfre_bdary
       p16 => special_particles_after_dtsub
+      p27 => special_insert_particles
       p17 => special_before_boundary
       p17 => special_before_boundary_diagnostics
       p17 => special_before_boundary_shared
