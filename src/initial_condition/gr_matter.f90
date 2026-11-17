@@ -31,6 +31,17 @@
 !                  h+,x = (hplus0, hcross0) sin(k x) cos(k t), K_ij = 0 at t=0;
 !                  fluid energy density e0, field sqrt(gamma) B^i = B_ext.
 !
+!  'scalar_bunch_davies': scalar fields phi, psi of special/klein_gordon
+!                  (lgr_kg=T, dphi = Pi = n^mu d_mu phi) for preheating,
+!                  following Giblin & Tishue (2019, PRD 100, 063543), used by
+!                  Grutkoski et al. (2025, arXiv:2504.08939): homogeneous
+!                  phi_bg, dphi_bg, psi_bg, dpsi_bg plus Bunch-Davies vacuum
+!                  fluctuations (Initcond/bunch_davies with m_eff), and the
+!                  metric from the linearized constraints in Newtonian gauge.
+!                  The potential (phimass, psimass, coupl_phipsi, lambda_psi)
+!                  must be the same as in klein_gordon (Vprime_choice='waterfall',
+!                  or 'quadratic' without psi).
+!
 !  13-oct-26: coded
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -58,14 +69,20 @@ module InitialCondition
   real :: phi0=0., hplus0=0., hcross0=0.
   integer :: nkgr=1
   character(len=labellen) :: perturb_dir='x'
+  real :: phi_bg=0., dphi_bg=0., psi_bg=0., dpsi_bg=0., ampl_vac=1e-6, xi_win=0.125
+  real :: phimass=1., psimass=0., coupl_phipsi=0., lambda_psi=0.
+  logical :: lalp_Phi=.true.
 !
   namelist /initial_condition_pars/ initgr, H0, e0, alpha0, a0, beta0, nkgr, &
-      delta0, theta0, eta0, eta_alfven, phi0, perturb_dir, hplus0, hcross0
+      delta0, theta0, eta0, eta_alfven, phi0, perturb_dir, hplus0, hcross0, &
+      phi_bg, dphi_bg, psi_bg, dpsi_bg, ampl_vac, xi_win, lalp_Phi, &
+      phimass, psimass, coupl_phipsi, lambda_psi
 !
   integer :: ichi=0, iKh=0, ith=0, ialp=0
   integer, dimension(3) :: iGam=0, ibeta=0
   integer, dimension(6) :: igt=0, iAt=0
   real, dimension(:), pointer :: B_ext
+  integer :: iphi=0, idphi=0, ipsi=0, idpsi=0
   real :: kgr
 !
   contains
@@ -109,6 +126,15 @@ module InitialCondition
       kgr=2*pi*nkgr/Lxyz(1)
       if (H0/=0.) e0=3*H0**2/(8*pi)
 !
+!  Scalar fields and potential of special/klein_gordon.
+!
+      if (initgr=='scalar_bunch_davies') then
+        iphi=farray_index_by_name('phi'); idphi=farray_index_by_name('dphi')
+        ipsi=farray_index_by_name('psi'); idpsi=farray_index_by_name('dpsi')
+        if (iphi<=0 .or. idphi<=0) call fatal_error('initialize_initial_condition', &
+            'scalar_bunch_davies needs special/klein_gordon')
+      endif
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
@@ -134,6 +160,10 @@ module InitialCondition
 !
       if (initgr=='flrw_singlemode') then
         call flrw_singlemode(f)
+        return
+      endif
+      if (initgr=='scalar_bunch_davies') then
+        call scalar_bunch_davies(f)
         return
       endif
 !
@@ -270,6 +300,189 @@ module InitialCondition
       enddo; enddo
 !
     endsubroutine initial_condition_all
+!***********************************************************************
+    subroutine scalar_bunch_davies(f)
+!
+!  Scalar fields with Bunch-Davies vacuum fluctuations and the metric from the
+!  linearized constraints (Giblin & Tishue 2019, Sect. III and eqs. 33-37).
+!  Units: lengths in 1/m, fields in m_pl (G=1).
+!
+!  Fields: f = f_bg + df with df from bunch_davies, omega=sqrt(k^2+m_eff^2),
+!  Pi = Pi_bg - i omega df - H df (e^-i omega t, deriv_prefactor=-1).
+!  bunch_davies gives the variance sum_k ampl^2 W^2/(2 omega), so
+!  ampl = ampl_vac/sqrt(L^3) gives int d^3k/(2pi)^3 ampl_vac^2 W^2/(2 omega).
+!  Its window (1-tanh[5 (k/kpeak-1)])/2 is that of Giblin & Tishue (eq. 38)
+!  with kpeak = 2 pi sqrt(3) N xi_win/L, except that their steepness is
+!  kappa sqrt(3) N xi_win (=5.2 for kappa=0.75, N xi_win=4). The k=0 mode of
+!  bunch_davies (computed with k=1) is removed by subtracting the mean.
+!
+!  Metric: gamma_ij = exp(-2 Phi) delta_ij, alpha = 1+Phi (lalp_Phi),
+!  K = -3H + dK, from the flat-space E and S_i of the fields, with
+!    d_i dK = -12 pi S_i   =>  dK = -12 pi del^-2 (d_i S_i),
+!    del2 Phi - H dK = 4 pi (E-<E>),
+!  and H^2 = 8 pi <E>/3, solved spectrally.
+!
+!  16-nov-26/Claude: coded (moved from special/klein_gordon)
+!
+      use Fourier, only: fft_xyz_parallel, kx_fft, ky_fft, kz_fft
+      use General, only: random_seed_wrapper
+      use Initcond, only: bunch_davies
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      real, dimension(nx,ny,nz) :: kk, are, aim, bre, bim, u1, u2, EE, dK, Phi, ph, ps
+      real, dimension(nx,ny,nz,3) :: kvec, SS
+      real, dimension(nx,ny,nz,3,2) :: gfld
+      real, dimension(2) :: meff2, var_exp, var_loc, var_all
+      real :: Hbg, Em, kc, ampl, f0, df0, fm
+      integer :: ikx, iky, ikz, ifld, nfld, j, k, kfield, kmom
+!
+      if (nxgrid/=nygrid .or. nxgrid/=nzgrid) call fatal_error('scalar_bunch_davies','needs a cubic grid')
+!
+!  Different random numbers on each processor.
+!
+      seed(1)=seed(1)+iproc
+      call random_seed_wrapper(PUT=seed)
+!
+      nfld=1
+      if (ipsi>0) nfld=2
+      meff2(1)=phimass**2
+      if (nfld==2) then
+        meff2(1)=meff2(1)+coupl_phipsi**2*psi_bg**2
+        meff2(2)=coupl_phipsi**2*phi_bg**2-psimass**2+3*lambda_psi*psi_bg**2
+      endif
+!
+!  Background Hubble rate from the homogeneous fields (for the -H df term).
+!
+      Hbg=sqrt(8*pi/3*(0.5*dphi_bg**2+0.5*dpsi_bg**2 &
+                       +sum(potential(spread(phi_bg,1,nx),spread(psi_bg,1,nx)))/nx))
+!
+      do ikz=1,nz; do iky=1,ny; do ikx=1,nx
+        kvec(ikx,iky,ikz,1)=kx_fft(ikx+ipx*nx)
+        kvec(ikx,iky,ikz,2)=ky_fft(iky+ipy*ny)
+        kvec(ikx,iky,ikz,3)=kz_fft(ikz+ipz*nz)
+      enddo; enddo; enddo
+      kk=sqrt(sum(kvec**2,4))
+!
+      kc=sqrt(3.)*nxgrid*xi_win
+      ampl=ampl_vac/sqrt(Lx*Ly*Lz)
+      do ifld=1,nfld
+        if (ifld==1) then
+          kfield=iphi; kmom=idphi; f0=phi_bg; df0=dphi_bg
+        else
+          kfield=ipsi; kmom=idpsi; f0=psi_bg; df0=dpsi_bg
+        endif
+        f(l1:l2,m1:m2,n1:n2,kfield)=0.; f(l1:l2,m1:m2,n1:n2,kmom)=0.
+        call bunch_davies(f,kfield,kfield,kmom,kmom,ampl,2*pi*kc/Lx,-1.,linv=.true., &
+                          mass=sqrt(meff2(ifld)))
+        do k=kfield,kmom,kmom-kfield
+          call mpiallreduce_sum(sum(f(l1:l2,m1:m2,n1:n2,k))/nwgrid,fm)
+          f(l1:l2,m1:m2,n1:n2,k)=f(l1:l2,m1:m2,n1:n2,k)-fm
+        enddo
+        var_loc(ifld)=sum(f(l1:l2,m1:m2,n1:n2,kfield)**2)/nwgrid
+        var_exp(ifld)=sum(ampl**2*(0.5*(1.-tanh(5.*(kk*Lx/(2*pi*kc)-1.))))**2 &
+                          /(2*sqrt(kk**2+meff2(ifld))),mask=kk>0.)
+!  Spectral gradient of the fluctuation.
+        are=f(l1:l2,m1:m2,n1:n2,kfield); aim=0.
+        call fft_xyz_parallel(are,aim)
+        do j=1,3
+          u1=-kvec(:,:,:,j)*aim; u2=kvec(:,:,:,j)*are
+          call fft_xyz_parallel(u1,u2,linv=.true.)
+          gfld(:,:,:,j,ifld)=u1
+        enddo
+        f(l1:l2,m1:m2,n1:n2,kmom)=df0+f(l1:l2,m1:m2,n1:n2,kmom)-Hbg*f(l1:l2,m1:m2,n1:n2,kfield)
+        f(l1:l2,m1:m2,n1:n2,kfield)=f0+f(l1:l2,m1:m2,n1:n2,kfield)
+      enddo
+      call mpiallreduce_sum(var_loc,var_all,2)
+      var_loc=var_exp
+      call mpiallreduce_sum(var_loc,var_exp,2)
+      if (lroot) then
+        print*,'scalar_bunch_davies: H_bg, m_eff^2 =',Hbg,meff2(1:nfld)
+        print*,'scalar_bunch_davies: expected and actual variances =',(var_exp(ifld),var_all(ifld),ifld=1,nfld)
+      endif
+!
+!  Flat-space E and S_i of the initial fields.
+!
+      ph=f(l1:l2,m1:m2,n1:n2,iphi); ps=0.
+      if (nfld==2) ps=f(l1:l2,m1:m2,n1:n2,ipsi)
+      do ikz=1,nz; do iky=1,ny
+        EE(:,iky,ikz)=potential(ph(:,iky,ikz),ps(:,iky,ikz))
+      enddo; enddo
+      SS=0.
+      do ifld=1,nfld
+        if (ifld==1) then
+          kmom=idphi
+        else
+          kmom=idpsi
+        endif
+        EE=EE+0.5*f(l1:l2,m1:m2,n1:n2,kmom)**2+0.5*sum(gfld(:,:,:,:,ifld)**2,4)
+        do j=1,3
+          SS(:,:,:,j)=SS(:,:,:,j)-f(l1:l2,m1:m2,n1:n2,kmom)*gfld(:,:,:,j,ifld)
+        enddo
+      enddo
+      call mpiallreduce_sum(sum(EE)/nwgrid,Em)
+      Hbg=sqrt(8*pi/3*Em)
+!
+!  dK = 12 pi (i k_j S_j)/k^2
+!
+      are=0.; aim=0.
+      do j=1,3
+        u1=SS(:,:,:,j); u2=0.
+        call fft_xyz_parallel(u1,u2)
+        are=are-kvec(:,:,:,j)*u2
+        aim=aim+kvec(:,:,:,j)*u1
+      enddo
+      where (kk>0.)
+        are=12*pi*are/kk**2; aim=12*pi*aim/kk**2
+      elsewhere
+        are=0.; aim=0.
+      endwhere
+      bre=are; bim=aim
+      call fft_xyz_parallel(are,aim,linv=.true.)
+      dK=are
+!
+!  Phi = -(4 pi (E-<E>) + H dK)_k/k^2
+!
+      u1=EE-Em; u2=0.
+      call fft_xyz_parallel(u1,u2)
+      where (kk>0.)
+        are=-(4*pi*u1+Hbg*bre)/kk**2; aim=-(4*pi*u2+Hbg*bim)/kk**2
+      elsewhere
+        are=0.; aim=0.
+      endwhere
+      call fft_xyz_parallel(are,aim,linv=.true.)
+      Phi=are
+!
+!  Z4c variables: gt_ij=delta_ij, At_ij=0, Theta=0, Gam^i=0, beta^i=0.
+!
+      f(:,:,:,ichi)=1.; f(:,:,:,iKh)=0.; f(:,:,:,ialp)=1.; f(:,:,:,ith)=0.
+      do j=1,6
+        f(:,:,:,igt(j))=0.; f(:,:,:,iAt(j))=0.
+      enddo
+      do j=1,3
+        f(:,:,:,igt(j))=1.; f(:,:,:,iGam(j))=0.; f(:,:,:,ibeta(j))=0.
+      enddo
+      f(l1:l2,m1:m2,n1:n2,ichi)=exp(2*Phi)
+      f(l1:l2,m1:m2,n1:n2,iKh)=-3*Hbg+dK
+      if (lalp_Phi) f(l1:l2,m1:m2,n1:n2,ialp)=1+Phi
+      if (lroot) print*,'scalar_bunch_davies: H(<E>), <E> =',Hbg,Em
+!
+    endsubroutine scalar_bunch_davies
+!***********************************************************************
+    function potential(ph,ps)
+!
+!  Waterfall potential of special/klein_gordon (quadratic for ps=0):
+!  V = m^2 phi^2/2 + lambda psi^4/4 - m_psi^2 psi^2/2 + m_psi^4/(4 lambda) + g^2 phi^2 psi^2/2.
+!
+      real, dimension(:) :: ph, ps
+      real, dimension(size(ph)) :: potential
+!
+      potential=0.5*phimass**2*ph**2+0.25*lambda_psi*ps**4-0.5*psimass**2*ps**2 &
+               +0.5*coupl_phipsi**2*ph**2*ps**2
+      if (lambda_psi/=0.) potential=potential+0.25*psimass**4/lambda_psi
+!
+    endfunction potential
 !***********************************************************************
     subroutine flrw_singlemode(f)
 !
