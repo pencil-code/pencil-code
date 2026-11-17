@@ -6754,12 +6754,12 @@ module Initcond
     endsubroutine power_randomphase_hel
 !***********************************************************************
     subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor, &
-        lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv,mass)
+        lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv,mass,ksteepness)
 !
 !  21-mar-25/axel: adapted from power_randomphase_hel
 !  21-may-25/axel: when kpeak<0, interpret is as sharp cutoff; powerlaw otherwise.
 !  12-apr-26/axel: added lappy_BD_k1D_factor, hardwired linv=T (indep of N, F -> scales with N^6 in 3-D)
-!  16-nov-26/TP: optional mass, omega=sqrt(k^2+mass^2) instead of k
+!  17-nov-26/TP: optional mass, omega=sqrt(k^2+mass^2) instead of k and optional steepness of the window, default the old 5
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest, roptest
@@ -6769,10 +6769,12 @@ module Initcond
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
-      real :: ampl, ampl_scaled, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
+      real :: ampl, ampl_scaled, kpeak, deriv_prefactor, scale_factor=1., steepness
       real :: kNy_x, kNy_y, kNy_z
       logical, optional :: lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv
-      real, optional :: mass
+      real, optional :: mass, ksteepness
+!
+      steepness=roptest(ksteepness,5.)
 !
       if (ampl==0.) then
         if (lroot) print*,'bunch_davies: do nothing with variables i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
@@ -6890,8 +6892,8 @@ module Initcond
 !  exp(-i*k1) = cos(-i*k1) + i*sin(-i*k1)
 !
       do i=1,1+i1b-i1a
-        u_re(:,:,:,i)=+ampl_scaled*v_re(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
-        u_im(:,:,:,i)=+ampl_scaled*v_im(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
+        u_re(:,:,:,i)=+ampl_scaled*v_re(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(steepness*(k1/kpeak-1.)))
+        u_im(:,:,:,i)=+ampl_scaled*v_im(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(steepness*(k1/kpeak-1.)))
         if (i2a>0) then
           v_re(:,:,:,i)=-r*u_im(:,:,:,i)
           v_im(:,:,:,i)=+r*u_re(:,:,:,i)
