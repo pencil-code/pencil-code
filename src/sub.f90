@@ -1496,7 +1496,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
     endsubroutine multsv_mn_inplace
 !***********************************************************************
-    subroutine multsv_mn_add(a,b,c)
+    subroutine multsv_mn_add(a,b,c,coeff)
 !
 !  Vector multiplied with scalar, gives vector.
 !  Unfortunately, this has almost the same name as the next one: multsv_add_mn
@@ -1505,17 +1505,26 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
 !  24-jun-08/MR: ladd added for incremental work
+!  17-nov-26/TP: added coeff to be able to have c-=a*b, for example
 !
       intent(in) :: a,b
       intent(inout) :: c
+      intent(in) :: coeff
 !
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: a
+      real, optional :: coeff
       integer :: i
 !
-      do i=1,3
-        c(:,i)=c(:,i)+a*b(:,i)
-      enddo
+      if(present(coeff)) then
+        do i=1,3
+          c(:,i)=c(:,i)+coeff*a*b(:,i)
+        enddo
+      else
+        do i=1,3
+          c(:,i)=c(:,i)+a*b(:,i)
+        enddo
+      endif
 !
     endsubroutine multsv_mn_add
 !***********************************************************************
