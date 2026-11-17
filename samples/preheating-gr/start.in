@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Preheating in full GR: Grutkoski, Macpherson, Giblin & Frieman (2025),
+!  arXiv:2504.08939, with the initial data of Giblin & Tishue (2019),
+!  PRD 100, 063543. V = m^2 phi^2/2 + g^2 phi^2 chi^2/2 (chi = psi here),
+!  m = 1e-6 m_pl, g^2 = 2.5e-7. Units: lengths in 1/m, fields in m_pl, G=1,
+!  so the coupling is coupl_phipsi^2 = g^2 m_pl^2/m^2 = 2.5e5 and the vacuum
+!  amplitude is ampl_vac = m/m_pl. Box L = 5/e (comoving at a=1 one e-fold
+!  before the end of inflation).
+!
+&init_pars
+  xyz0=0.,0.,0., Lxyz=1.83939720585721,1.83939720585721,1.83939720585721
+  lperi=T,T,T
+  lwrite_aux=T
+/
+&klein_gordon_init_pars
+  initspecial='nothing'
+  Vprime_choice='waterfall', lwaterfall=T
+  phimass=1., coupl_phipsi=500., psimass=0., lambda_psi=0.
+  Hscript_choice='set', Hscript0=0.
+/
+&z4c_init_pars
+  initz4c='flat'
+/
+&initial_condition_pars
+  initgr='scalar_bunch_davies'
+  phi_bg=0.415, dphi_bg=-0.154, psi_bg=0., dpsi_bg=0.
+  phimass=1., coupl_phipsi=500., psimass=0., lambda_psi=0.
+  ampl_vac=1e-6, xi_win=0.25
+/

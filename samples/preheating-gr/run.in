@@ -1,0 +1,14 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&run_pars
+  nt=501, it1=100, dt=0.0029, itorder=3, tmax=130., dsnap=2.
+  lpencil_check=F, lpencil_check_small=F
+/
+&klein_gordon_run_pars
+  Vprime_choice='waterfall', lwaterfall=T
+  coupl_phipsi=500., Hscript_choice='set', Hscript0=0.
+  cdt_mass=0.5
+/
+&z4c_run_pars
+  lapse_type='1+log-mean', shift_type='zero', kappa1=0., hyper3_mesh=0.
+/

@@ -1,0 +1,14 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+MPICOMM  = mpicomm
+ENTROPY  = noentropy
+MAGNETIC = nomagnetic
+HYDRO    = nohydro
+DENSITY  = nodensity
+EOS      = noeos
+FOURIER  = fourier_fftpack
+SPECIAL  = special/klein_gordon special/z4c
+INITIAL_CONDITION = initial_condition/gr_matter
+REAL_PRECISION = double
