@@ -42,6 +42,7 @@ module NSCBC
   character (len=labellen), dimension(ninit) :: inlet_profile='nothing'
   character(len=fnlen) :: turb_inlet_dir=''
   character(len=fnlen) :: turb_inlet_file='var.dat'
+  character(len=fnlen) :: inlet_table_file='gas_inlet.dat'   ! the file of inlet_profile='radial-table'
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   real :: transversal_damping=0.2, turb_profile_mag=1.0
 !
@@ -64,6 +65,24 @@ module NSCBC
 !  with the transverse terms it does as soon as a large vortex crosses it.
 !
   logical :: lbackflow_outlet=.false.
+  real :: ambient_sweep_speed=0.
+  character (len=fnlen) :: ambient_inlet_dir=''
+!
+!  turb_inlet_mode (10-nov-26): how the turbulent inlet (inlet_from_file=T) gets its
+!  fluctuations from turb_inlet_dir:
+!    'box'    (default) the var.dat of a periodic box, swept through the inlet plane at the
+!             speed u_t (Taylor's hypothesis with ONE speed for the whole plane: eddies are
+!             squashed where the local mean velocity is below u_t);
+!    'slices' the TIME SERIES of the video slices of the plane parallel to the inlet (the
+!             xy slices slice_uu1/2/3.xy of a z inlet, yz for x, xz for y) 
+!
+  character (len=labellen) :: turb_inlet_mode='box'
+  real :: turb_slices_tmin=0., turb_slices_tmax=0., turb_slices_blend=0.
+  logical :: lturb_slices_subtract_mean=.true., lturb_slices_scale=.false.
+  real, allocatable, dimension(:,:,:,:) :: slc_u
+  real, allocatable, dimension(:,:,:) :: u_blend
+  real, allocatable, dimension(:) :: slc_t
+  integer :: nt_slc=0
   logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.,onesided_inlet=.true.
   logical :: notransveral_terms=.true.
@@ -113,12 +132,14 @@ module NSCBC
       notransveral_terms, transversal_damping,radius_profile,momentum_thickness,&
       jet_center,velocity_ratio,turb_inlet_file,sigma,lfinal_velocity_profile,&
       velocity_profile,turb_profile_mag,inlet_zz1,inlet_zz2,zz_profile,&
-      transversal_dissipation,lbackflow_outlet
+      transversal_dissipation,lbackflow_outlet,ambient_sweep_speed,&
+      turb_inlet_mode,turb_slices_tmin,turb_slices_tmax,lturb_slices_subtract_mean,&
+      lturb_slices_scale,turb_slices_blend,ambient_inlet_dir,inlet_table_file
 !
   real :: gamma
   integer :: ngas_tab=0
-  logical :: lgas_table_read=.false.
-  real, allocatable, dimension(:) :: gas_r, gas_u, gas_v, gas_urms
+  logical :: lgas_table_read=.false., lgas_amb=.false.
+  real, allocatable, dimension(:) :: gas_r, gas_u, gas_v, gas_urms, gas_uamb
 
   contains
 !***********************************************************************
@@ -277,9 +298,16 @@ module NSCBC
 !
 !  Read data only if required, i.e. if we are at a processor handling inlets
 !
-            if (proc_at_inlet) then
+            if (proc_at_inlet .and. turb_inlet_mode=='slices') then
+              if (index(bc12(j),'inlet')>0) then     ! not for the outlet processes
+                call read_turb_slices(j)
+                first_NSCBC=.false.
+              endif
+            endif
+            if (proc_at_inlet .and. (turb_inlet_mode=='box' .or. &
+                (turb_inlet_mode=='slices' .and. lambient_box() .and. index(bc12(j),'inlet')>0))) then
               call safe_character_assign(directory_in,&
-                  trim(turb_inlet_dir)//'/data/proc'//itoa(iproc_in))
+                  trim(box_inlet_dir())//'/data/proc'//itoa(iproc_in))
               call safe_character_assign(turbfile,&
                   trim(directory_in)//'/'//trim(turb_inlet_file))
               open(1,FILE=turbfile,FORM='unformatted')
@@ -920,12 +948,20 @@ module NSCBC
 !
 ! Check if we will read turbulent inlet data from data file
 !
-      if (inlet_from_file) then
+      if (inlet_from_file .and. turb_inlet_mode=='slices') then
+        if (lroot) print*,'Turbulent inlet from the slice time series of ',trim(turb_inlet_dir)
+        if (lambient_box() .and. lroot) print*, &
+            'Ambient inlet turbulence from the box ',trim(ambient_inlet_dir)
+      elseif (inlet_from_file .and. turb_inlet_mode/='box') then
+        call fatal_error('read_NSCBC_run_pars',"turb_inlet_mode must be 'box' or 'slices'")
+      elseif (inlet_from_file) then
         print*,'Read inlet data from file!'
+      endif
+      if (inlet_from_file .and. (turb_inlet_mode=='box' .or. lambient_box())) then
 !
 ! Read the size of the data to be found on the file.
 !
-        file=trim(turb_inlet_dir)//'/data/proc0/dim.dat'
+        file=trim(box_inlet_dir())//'/data/proc0/dim.dat'
         inquire(FILE=trim(file),EXIST=exist)
         if (exist) then
           call rdim(file,&
@@ -1013,8 +1049,217 @@ module NSCBC
       if (allocated(x_in)) deallocate(x_in)
       if (allocated(y_in)) deallocate(y_in)
       if (allocated(z_in)) deallocate(z_in)
+      if (allocated(slc_u)) deallocate(slc_u)
+      if (allocated(slc_t)) deallocate(slc_t)
+      if (allocated(u_blend)) deallocate(u_blend)
 !
     endsubroutine NSCBC_clean_up
+!***********************************************************************
+    subroutine read_turb_slices(dir)
+!
+!  turb_inlet_mode='slices': read the time series of the precursor's slices of the plane
+!  parallel to the inlet into slc_u(:,:,3,nt_slc), slc_t(nt_slc) (see turb_inlet_mode).
+!  Called once by the inlet processes.  Record format of a Pencil slice file:
+!  data(n1,n2), time, position [, t]  (unformatted, io_dist/nohdf5_io).
+!
+!  10-nov-26/nils: coded
+!
+      use Sub, only: rdim
+      use General, only: itoa
+!
+      integer, intent(in) :: dir
+!
+      integer, parameter :: lun=1
+      integer :: mx_p,my_p,mz_p,mvar_p,maux_p,mglobal_p,nghost_p,npx_p,npy_p,npz_p
+      integer :: n1,n2,ip1,ip2,np3,k3,iproc_p,ios,nt,i,idum
+      real :: time,pos,tmin,tmax,rms_s
+      logical :: lflag,lfound
+      character :: prec_p
+      character (len=2) :: lab
+      character (len=fnlen) :: file,pdir
+      character (len=512) :: line
+      character (len=20) :: clab
+      real, allocatable, dimension(:,:) :: buf
+      real, allocatable, dimension(:,:,:) :: mean
+!
+!  Plane dimensions and the two in-plane processor indices (the third one, perpendicular
+!  to the plane, is the one of the precursor process that writes the slice).
+!
+      if (dir==1) then
+        lab='yz'; n1=ny; n2=nz; ip1=ipy; ip2=ipz
+      elseif (dir==2) then
+        lab='xz'; n1=nx; n2=nz; ip1=ipx; ip2=ipz
+      else
+        lab='xy'; n1=nx; n2=ny; ip1=ipx; ip2=ipy
+      endif
+!
+!  Layout of the precursor: the in-plane GLOBAL grid (data/dim.dat holds mxgrid etc.) and
+!  processor layout must equal ours, hence the block size too.
+!
+      file=trim(turb_inlet_dir)//'/data/dim.dat'
+      call rdim(file,mx_p,my_p,mz_p,mvar_p,maux_p,mglobal_p,prec_p,nghost_p,npx_p,npy_p,npz_p)
+      if (dir==1) then
+        np3=npx_p
+        if (my_p/=mygrid .or. mz_p/=mzgrid .or. npy_p/=nprocy .or. npz_p/=nprocz) &
+            call fatal_error('read_turb_slices','precursor y, z grid or nprocy, nprocz differ from ours')
+      elseif (dir==2) then
+        np3=npy_p
+        if (mx_p/=mxgrid .or. mz_p/=mzgrid .or. npx_p/=nprocx .or. npz_p/=nprocz) &
+            call fatal_error('read_turb_slices','precursor x, z grid or nprocx, nprocz differ from ours')
+      else
+        np3=npz_p
+        if (mx_p/=mxgrid .or. my_p/=mygrid .or. npx_p/=nprocx .or. npy_p/=nprocy) &
+            call fatal_error('read_turb_slices','precursor x, y grid or nprocx, nprocy differ from ours')
+      endif
+!
+!  Find the precursor process with our in-plane indices that writes the slice
+!  (slice_position.dat: lines "T/F  index  LABEL").
+!
+      lfound=.false.
+      do k3=0,np3-1
+        if (dir==1) then
+          iproc_p=k3+npx_p*(ip1+npy_p*ip2)
+        elseif (dir==2) then
+          iproc_p=ip1+npx_p*(k3+npy_p*ip2)
+        else
+          iproc_p=ip1+npx_p*(ip2+npy_p*k3)
+        endif
+        pdir=trim(turb_inlet_dir)//'/data/proc'//trim(itoa(iproc_p))
+        open(lun,file=trim(pdir)//'/slice_position.dat',status='old',action='read',iostat=ios)
+        if (ios/=0) call fatal_error('read_turb_slices','cannot open '//trim(pdir)//'/slice_position.dat')
+        do
+          read(lun,'(A)',iostat=ios) line
+          if (ios/=0) exit
+          clab=''
+          read(line,*,iostat=ios) lflag,idum,clab
+          if (ios/=0) cycle
+          if (lflag .and. ((trim(clab)=='XY'.and.dir==3) .or. (trim(clab)=='XZ'.and.dir==2) .or. &
+                           (trim(clab)=='YZ'.and.dir==1))) lfound=.true.
+        enddo
+        close(lun)
+        if (lfound) exit
+      enddo
+      if (.not.lfound) call fatal_error('read_turb_slices', &
+          'no precursor process with our in-plane indices writes the '//lab//' slice')
+!
+!  Count the frames in the window, then read the three components.
+!
+      tmin=turb_slices_tmin; tmax=turb_slices_tmax
+      allocate(buf(n1,n2))
+      file=trim(pdir)//'/slice_uu1.'//lab
+      open(lun,file=trim(file),form='unformatted',status='old',action='read',iostat=ios)
+      if (ios/=0) call fatal_error('read_turb_slices','cannot open '//trim(file))
+      nt=0
+      do
+        read(lun,iostat=ios) buf,time,pos
+        if (ios/=0) exit
+        if (time>=tmin .and. (tmax<=0. .or. time<=tmax)) nt=nt+1
+      enddo
+      close(lun)
+      if (nt<2) call fatal_error('read_turb_slices','fewer than 2 frames in the window of '//trim(file))
+      nt_slc=nt
+      if (allocated(slc_u)) deallocate(slc_u)
+      if (allocated(slc_t)) deallocate(slc_t)
+      allocate(slc_u(n1,n2,3,nt),slc_t(nt))
+      if (allocated(u_blend)) deallocate(u_blend)
+      allocate(u_blend(n1,n2,3))
+      do i=1,3
+        file=trim(pdir)//'/slice_uu'//trim(itoa(i))//'.'//lab
+        open(lun,file=trim(file),form='unformatted',status='old',action='read',iostat=ios)
+        if (ios/=0) call fatal_error('read_turb_slices','cannot open '//trim(file))
+        nt=0
+        do
+          read(lun,iostat=ios) buf,time,pos
+          if (ios/=0) exit
+          if (time>=tmin .and. (tmax<=0. .or. time<=tmax)) then
+            nt=nt+1
+            if (nt>nt_slc) exit
+            slc_u(:,:,i,nt)=buf
+            if (i==1) slc_t(nt)=time
+          endif
+        enddo
+        close(lun)
+        if (nt/=nt_slc) call fatal_error('read_turb_slices','frame count differs between the components')
+      enddo
+      deallocate(buf)
+!
+!  Fluctuations: subtract the time mean of the record at every point.
+!
+      if (lturb_slices_subtract_mean) then
+        allocate(mean(n1,n2,3))
+        mean=sum(slc_u,dim=4)/nt_slc
+        do nt=1,nt_slc
+          slc_u(:,:,:,nt)=slc_u(:,:,:,nt)-mean
+        enddo
+        deallocate(mean)
+      endif
+!
+!  Report from the first in-plane process and from every process whose record is not
+!  empty (a record embedded in a larger plane, python/embed_jet_slices.py, is zero in
+!  the processes outside the precursor's plane).
+!
+      rms_s=sqrt(sum(slc_u**2)/(3*n1*n2*nt_slc))
+      if ((ip1==0 .and. ip2==0) .or. rms_s>1e-3) print*,'read_turb_slices: ',nt_slc,' '//lab//' frames of '// &
+          trim(pdir)//' at t = ',slc_t(1),' - ',slc_t(nt_slc),' (position ',pos, &
+          '); rms of the fluctuations u1, u2, u3 = ', &
+          sqrt(sum(slc_u(:,:,1,:)**2)/(n1*n2*nt_slc)), sqrt(sum(slc_u(:,:,2,:)**2)/(n1*n2*nt_slc)), &
+          sqrt(sum(slc_u(:,:,3,:)**2)/(n1*n2*nt_slc)),' (in-plane process ',ip1,ip2,')'
+!
+    endsubroutine read_turb_slices
+!***********************************************************************
+    subroutine turbulent_vel_slices(u_turb,smooth)
+!
+!  Fluctuations of the slice record at the current time: linear interpolation between the
+!  two frames enclosing t_rec = slc_t(1) + mod(t, record length); times the smooth start.
+!
+!  10-nov-26/nils: coded
+!
+      real, dimension(:,:,:), intent(out) :: u_turb
+      real, intent(in) :: smooth
+!
+      real :: trec,tlen,wb
+!
+      tlen=slc_t(nt_slc)-slc_t(1)
+      trec=slc_t(1)+mod(real(t),tlen)
+      call interp_slices(trec,u_turb)
+!
+!  Cross-fade into the start of the record over its last turb_slices_blend seconds, so
+!  that the replay does not jump.
+!
+      if (turb_slices_blend>0. .and. trec>slc_t(nt_slc)-turb_slices_blend) then
+        wb=(trec-(slc_t(nt_slc)-turb_slices_blend))/turb_slices_blend
+        call interp_slices(slc_t(1)+(trec-(slc_t(nt_slc)-turb_slices_blend)),u_blend)
+        u_turb=(1.-wb)*u_turb+wb*u_blend
+      endif
+      u_turb=u_turb*smooth
+!
+    contains
+!
+      subroutine interp_slices(tq,u)
+!
+!  Linear interpolation of the record at time tq (bisection for the frames).
+!
+        real, intent(in) :: tq
+        real, dimension(:,:,:), intent(out) :: u
+        integer :: k,klo,khi
+        real :: w
+!
+        klo=1; khi=nt_slc
+        do while (khi-klo>1)              ! bisection: slc_t(klo) <= tq < slc_t(khi)
+          k=(klo+khi)/2
+          if (slc_t(k)<=tq) then
+            klo=k
+          else
+            khi=k
+          endif
+        enddo
+        w=(tq-slc_t(klo))/(slc_t(khi)-slc_t(klo))
+        w=min(max(w,0.),1.)
+        u=(1.-w)*slc_u(:,:,:,klo)+w*slc_u(:,:,:,khi)
+!
+      endsubroutine interp_slices
+!
+    endsubroutine turbulent_vel_slices
 !***********************************************************************
     subroutine find_velocity_at_inlet(u_in,non_zero_transveral_velo,&
         domain_length,grid_points,u_t,dir,imin_turb,imax_turb,&
@@ -1035,11 +1280,11 @@ module NSCBC
 !
       real :: shift, grid_shift, weight, round
       integer :: iround, lowergrid, uppergrid
-      real, allocatable, dimension(:,:)   :: u_profile,prof
+      real, allocatable, dimension(:,:)   :: u_profile,prof,u_profile_amb
       real, allocatable, dimension(:,:,:) :: u_turb
       real, dimension(3) :: velo
       real :: radius_mean, smooth, rad, vel
-      real :: xx1, xx2, uax, vrad, urms_loc
+      real :: xx1, xx2, uax, vrad, urms_loc, uamb_loc
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
       logical :: lprint
@@ -1050,8 +1295,10 @@ module NSCBC
       allocate(u_profile(igrid,jgrid  ),STAT=stat(1))
       allocate(u_turb   (igrid,jgrid,3),STAT=stat(2))
       allocate(prof(igrid,jgrid  ),STAT=stat(3))
+      allocate(u_profile_amb(igrid,jgrid),STAT=stat(4))
       if (maxval(stat)>0) &
           call stop_it("Couldn't allocate memory for all vars in find_velocity_at_inlet")
+      u_profile_amb=0.
 !
 ! Define velocity profile at inlet
 !
@@ -1178,14 +1425,14 @@ module NSCBC
               enddo
             enddo
 !
-          case ('spray-table')
+          case ('radial-table','spray-table')     ! 'spray-table': the name until 12-nov-26
 !
-!  Axisymmetric mean profile read from gas_inlet.dat: columns r, u_axial
+!  Axisymmetric mean profile read from inlet_table_file: columns r, u_axial
 !  (>0 into the domain), v_radial (>0 outward), u_rms.  Linear interpolation
 !  in r; the sign of u_t selects the inflow direction; u_profile (used to
 !  scale the turbulent inlet from file) is the tabulated u_rms.
 !
-            if (lprint) print*,'inlet_profile: spray-table (gas_inlet.dat)'
+            if (lprint) print*,'inlet_profile: radial-table ('//trim(inlet_table_file)//')'
             non_zero_transveral_velo=.true.
             if (.not.lgas_table_read) call read_gas_inlet_table
             do jjj=imin,imax
@@ -1198,7 +1445,7 @@ module NSCBC
                   xx1=x(jjj)-jet_center(1); xx2=y(kkk)-jet_center(2)
                 endif
                 rad=sqrt(xx1**2+xx2**2)
-                call interp_gas_table(rad,uax,vrad,urms_loc)
+                call interp_gas_table(rad,uax,vrad,urms_loc,uamb_loc)
                 u_in(jjj-imin+1,kkk-jmin+1,dir)=u_in(jjj-imin+1,kkk-jmin+1,dir)+sign(1.0,u_t)*uax
                 if (rad>0.0) then
                   if (dir==1) then
@@ -1213,6 +1460,7 @@ module NSCBC
                   endif
                 endif
                 u_profile(jjj-imin+1,kkk-jmin+1)=urms_loc
+                u_profile_amb(jjj-imin+1,kkk-jmin+1)=uamb_loc
               enddo
             enddo
 !
@@ -1287,7 +1535,32 @@ module NSCBC
 !  Check if we are using a pre-run data file as inlet
 !  condition, if not the chosen inlet profile will be used.
 !
-        if (inlet_from_file) then
+        if (inlet_from_file .and. turb_inlet_mode=='slices') then
+!
+!  Fluctuations from the slice record (see turb_inlet_mode, read_turb_slices); the
+!  component normal to the inlet follows the inflow direction (sign of u_t).
+!
+          non_zero_transveral_velo=.true.
+          if (smooth_time > 0) then
+            smooth=min(t/smooth_time,1.0d0)
+          else
+            smooth=1.
+          endif
+          call turbulent_vel_slices(u_turb,smooth)
+          do i=1,3
+            if (lturb_slices_scale) then
+              u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*u_profile*turb_profile_mag*&
+                  merge(sign(1.0,u_t),1.0,i==dir)
+            else
+              u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*turb_profile_mag*merge(sign(1.0,u_t),1.0,i==dir)
+            endif
+          enddo
+!
+!  Ambient turbulence from the box in ambient_inlet_dir (see ambient_inlet_dir).
+!
+          if (lgas_amb .and. lambient_box()) call add_ambient_sample
+!
+        elseif (inlet_from_file) then
           non_zero_transveral_velo=.true.
           if (domain_length == 0) call fatal_error('find_velocity_at_inlet',&
               'domain_length=0. Check that the precisions are the same.')
@@ -1337,50 +1610,146 @@ module NSCBC
             u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*u_profile*turb_profile_mag
           enddo
 !
+!  Ambient turbulence (5th column of the inlet table): a second sample of the
+!  precursor, swept at ambient_sweep_speed and starting half a precursor length
+!  away from the first one (see ambient_sweep_speed).
+!
+          if (lgas_amb) call add_ambient_sample
+!
         endif
 !
 !  Deallocate
 !
         deallocate(u_profile)
+        deallocate(u_profile_amb)
         deallocate(u_turb)
+!
+      contains
+!
+        subroutine add_ambient_sample
+!
+!  The ambient sample: the box f_in (turb_inlet_dir in box mode, ambient_inlet_dir
+!  in slices mode) swept at ambient_sweep_speed, scaled by the 5th column of
+!  the inlet table (u_profile_amb).  Uses the box variables of the host.
+!
+          if (domain_length == 0) call fatal_error('add_ambient_sample',&
+              'domain_length=0: no box for the ambient sample (ambient_inlet_dir?)')
+          round=0.5+t*ambient_sweep_speed/domain_length
+          iround=int(round)
+          shift=round-iround
+          grid_shift=shift*grid_points
+          if (dir==1) then
+            uppergrid=l2_in-int(grid_shift)
+          elseif (dir==2) then
+            uppergrid=m2_in-int(grid_shift)
+          else
+            uppergrid=n2_in-int(grid_shift)
+          endif
+          lowergrid=uppergrid-1
+          weight=grid_shift-int(grid_shift)
+          if (dir==1) then
+            call turbulent_vel_x(u_turb,lowergrid,uppergrid,imin_turb,imax_turb,&
+                jmin_turb,jmax_turb,weight,smooth)
+          elseif (dir==2) then
+            call turbulent_vel_y(u_turb,lowergrid,uppergrid,imin_turb,imax_turb,&
+                jmin_turb,jmax_turb,weight,smooth)
+          elseif (dir==3) then
+            call turbulent_vel_z(u_turb,lowergrid,uppergrid,imin_turb,imax_turb,&
+                jmin_turb,jmax_turb,weight,smooth)
+          endif
+          do i=1,3
+            u_in(:,:,i)=u_in(:,:,i)+u_turb(:,:,i)*u_profile_amb*turb_profile_mag
+          enddo
+!
+        endsubroutine add_ambient_sample
 !
       end subroutine find_velocity_at_inlet
 !***********************************************************************
+    logical function lambient_box()
+!
+!  True if the ambient sample is to be taken from a separate box (slices mode
+!  with ambient_inlet_dir set and a positive ambient_sweep_speed).
+!
+      lambient_box = (turb_inlet_mode=='slices' .and. ambient_inlet_dir/='' .and. &
+          ambient_sweep_speed>0.)
+!
+    endfunction lambient_box
+!***********************************************************************
+    function box_inlet_dir()
+!
+!  The directory of the box read into f_in: turb_inlet_dir in box mode,
+!  ambient_inlet_dir in slices mode.
+!
+      character (len=fnlen) :: box_inlet_dir
+!
+      if (turb_inlet_mode=='slices') then
+        box_inlet_dir=ambient_inlet_dir
+      else
+        box_inlet_dir=turb_inlet_dir
+      endif
+!
+    endfunction box_inlet_dir
+!***********************************************************************
     subroutine read_gas_inlet_table
 !
-!  Read gas_inlet.dat: first line n, then n lines of  r  u_axial  v_radial  u_rms  (SI).
+!  Read the tabulated inlet profile (inlet_table_file, default gas_inlet.dat): first line
+!  n, then n lines of  r  u_axial  v_radial  u_rms  (code units), optionally with a 5th
+!  column, the ambient rms (see ambient_sweep_speed).
 !
-!  26-oct-26/claude: coded
+!  26-oct-26/nils: coded
+!   9-nov-26/nils: optional 5th column
 !
-      integer :: i, iunit
+      integer :: i, iunit, ios
+      character(len=512) :: line
 !
       iunit=94
-      open(iunit,file='gas_inlet.dat',status='old',action='read')
+      open(iunit,file=trim(inlet_table_file),status='old',action='read')
       read(iunit,*) ngas_tab
       if (allocated(gas_r)) deallocate(gas_r,gas_u,gas_v,gas_urms)
+      if (allocated(gas_uamb)) deallocate(gas_uamb)
       allocate(gas_r(ngas_tab),gas_u(ngas_tab),gas_v(ngas_tab),gas_urms(ngas_tab))
+      allocate(gas_uamb(ngas_tab))
       do i=1,ngas_tab
-        read(iunit,*) gas_r(i), gas_u(i), gas_v(i), gas_urms(i)
+        read(iunit,'(A)') line
+        read(line,*,iostat=ios) gas_r(i), gas_u(i), gas_v(i), gas_urms(i), gas_uamb(i)
+        if (ios/=0) then
+          read(line,*) gas_r(i), gas_u(i), gas_v(i), gas_urms(i)
+          gas_uamb(i)=0.
+        endif
       enddo
       close(iunit)
       lgas_table_read=.true.
-      if (lroot) print*,'read_gas_inlet_table: read ',ngas_tab,' radial stations from gas_inlet.dat'
+      lgas_amb=any(gas_uamb>0.)
+      if (lgas_amb .and. ambient_sweep_speed<=0.) then
+        if (lroot) print*,'read_gas_inlet_table: WARNING: '//trim(inlet_table_file)//' has an ambient rms '// &
+            '(5th column) but ambient_sweep_speed <= 0: the ambient turbulence is NOT imposed'
+        lgas_amb=.false.
+      endif
+      if (lgas_amb .and. turb_inlet_mode=='slices' .and. ambient_inlet_dir=='') then
+        if (lroot) print*,'read_gas_inlet_table: WARNING: '//trim(inlet_table_file)//' has an ambient rms '// &
+            "(5th column) but turb_inlet_mode='slices' and ambient_inlet_dir is empty: NOT imposed"
+        lgas_amb=.false.
+      endif
+      if (lroot) print*,'read_gas_inlet_table: read ',ngas_tab,' radial stations from '//trim(inlet_table_file)
+      if (lroot .and. lgas_amb) print*,'read_gas_inlet_table: ambient rms (5th column), max ', &
+          maxval(gas_uamb),' m/s, swept at ambient_sweep_speed = ',ambient_sweep_speed,' m/s'
 !
     endsubroutine read_gas_inlet_table
 !***********************************************************************
-    subroutine interp_gas_table(rad,uax,vrad,urms_loc)
+    subroutine interp_gas_table(rad,uax,vrad,urms_loc,uamb_loc)
 !
 !  Linear interpolation of the tabulated gas inlet profile; constant beyond the last station.
 !
       real, intent(in)  :: rad
       real, intent(out) :: uax, vrad, urms_loc
+      real, intent(out), optional :: uamb_loc
       integer :: i
-      real :: w
+      real :: w, ua
 !
       if (rad<=gas_r(1)) then
-        uax=gas_u(1); vrad=gas_v(1); urms_loc=gas_urms(1)
+        uax=gas_u(1); vrad=gas_v(1); urms_loc=gas_urms(1); ua=gas_uamb(1)
       elseif (rad>=gas_r(ngas_tab)) then
-        uax=gas_u(ngas_tab); vrad=gas_v(ngas_tab); urms_loc=gas_urms(ngas_tab)
+        uax=gas_u(ngas_tab); vrad=gas_v(ngas_tab); urms_loc=gas_urms(ngas_tab); ua=gas_uamb(ngas_tab)
       else
         i=1
         do while (gas_r(i+1)<rad)
@@ -1390,7 +1759,9 @@ module NSCBC
         uax=(1.0-w)*gas_u(i)+w*gas_u(i+1)
         vrad=(1.0-w)*gas_v(i)+w*gas_v(i+1)
         urms_loc=(1.0-w)*gas_urms(i)+w*gas_urms(i+1)
+        ua=(1.0-w)*gas_uamb(i)+w*gas_uamb(i+1)
       endif
+      if (present(uamb_loc)) uamb_loc=ua
 !
     endsubroutine interp_gas_table
 !***********************************************************************
