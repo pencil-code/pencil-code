@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 
 # TODO: Install opt-einsum locally.
-# TODO: Install opt-einsum on CSC server.
+# TODO: Install opt-einsum on server where running training and inference.
 # TODO: Note use of opt-einsum package and reason for its use (for faster computation and/or less memory usage, per https://docs.pytorch.org/docs/2.12/generated/torch.einsum.html) in paper.
 
 # TODO: Create all missing class and method docstrings
@@ -60,23 +60,28 @@ class KinDynamo_TBNN(nn.Module):
     should be in the following order, from first to last: mean residual EMF z, mean residual EMF y,
     mean residual EMF x.
 
+    # NOTE: should_exclude_B_x_from_inference_of_alpha_and_eta is included as a parameter because for kinematic dynamos (specifically, dynamos in the kinematic phase), alpha and eta are independent of the mean magnetic field vector, so it makes sense to make their inferred values be independent of the mean magnetic field vector (B_x).
+
     """
 
-    # def __init__(self, in_channels=6, out_channels=3, second_level_channels=16):
-    def __init__(self, in_channels, out_channels, second_level_channels, spacing_val):
+    def __init__(self, in_channels, out_channels, second_level_channels, spacing_val, should_exclude_B_x_from_inference_of_alpha_and_eta=False):
 
         super(KinDynamo_TBNN, self).__init__()
+
+        if should_exclude_B_x_from_inference_of_alpha_and_eta:
+            in_channels = int(in_channels / 2)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.spacing_val = spacing_val
+        self.should_exclude_B_x_from_inference_of_alpha_and_eta = should_exclude_B_x_from_inference_of_alpha_and_eta
 
         channels = second_level_channels
 
         # FOR ALPHA:
 
         # ENCODER
-        self.alpha_encoder_convblock_1 = KinDynamo_TBNN._block(in_channels, channels)
+        self.alpha_encoder_convblock_1 = KinDynamo_TBNN._block(self.in_channels, channels)
         self.alpha_downsample_1 = nn.MaxPool3d(kernel_size=2, stride=2)
 
         self.alpha_encoder_convblock_2 = KinDynamo_TBNN._block(channels, channels * 2)
@@ -96,7 +101,7 @@ class KinDynamo_TBNN(nn.Module):
         #   of varying size.
         self.alpha_decoder_convblock_2 = KinDynamo_TBNN._block(channels * 2, channels)
 
-        self.alpha_conv = nn.Conv3d(channels, out_channels*out_channels, kernel_size=1)
+        self.alpha_conv = nn.Conv3d(channels, self.out_channels*self.out_channels, kernel_size=1)
         
 
         # FOR ETA:
@@ -121,7 +126,7 @@ class KinDynamo_TBNN(nn.Module):
         #   of varying size.
         self.eta_decoder_convblock_2 = KinDynamo_TBNN._block(channels * 2, channels)
 
-        self.eta_conv = nn.Conv3d(channels, out_channels*out_channels*out_channels, kernel_size=1) 
+        self.eta_conv = nn.Conv3d(channels, self.out_channels*self.out_channels*self.out_channels, kernel_size=1) 
 
 
     def forward(self, U_x, B_x):
@@ -143,7 +148,10 @@ class KinDynamo_TBNN(nn.Module):
         U_x = U_x.permute(0, 1, 4, 3, 2)
         B_x = B_x.permute(0, 1, 4, 3, 2)
 
-        x = torch.cat((U_x, B_x), dim=1)
+        if self.should_exclude_B_x_from_inference_of_alpha_and_eta:
+            x = U_x
+        else:
+            x = torch.cat((U_x, B_x), dim=1)
 
         # ALPHA
 

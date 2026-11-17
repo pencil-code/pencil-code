@@ -1,16 +1,9 @@
-kindynamo_fno:
-  modes1: 19
-  modes2: 19
-  modes3: 19
-  width: 32
-  in_channels: 6
-  out_channels: 3
-
 kindynamo_tbnn:
   in_channels: 6
   out_channels: 3
-  second_level_channels: 16
+  second_level_channels: 8
   spacing_val: 2
+  should_exclude_B_x_from_inference_of_alpha_and_eta: True
 
 kindynamo_unet:
   in_channels: 6
