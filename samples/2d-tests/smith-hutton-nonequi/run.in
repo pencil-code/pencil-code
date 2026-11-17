@@ -1,0 +1,16 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&run_pars
+  cvsid='$Id$'
+  nt=201, it1=50, isave=1000
+  itsnap=50
+  !lwrite_2d=T
+  lpencil_check=T
+/
+&hydro_run_pars
+  kinematic_flow='Smith-Hutton'
+/
+&pscalar_run_pars
+  pscalar_diff=2e-3
+  lupw_cc=T
+/

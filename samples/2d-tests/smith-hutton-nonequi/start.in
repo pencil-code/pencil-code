@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&init_pars
+  cvsid='$Id$',
+  random_gen='nr_f90'
+  lwrite_aux=T
+  lkinflow_as_aux=T
+!
+  Lxyz=1,1,1
+  xyz0=-1,0,-0.5
+!
+  lperi=F,F,T
+  bcx='s+f:s'
+  bcy='s+f'
+!
+  grid_func(1) = 'step-linear'
+  xyz_step(1,:) = -0.8,-0.4
+  xi_step_frac(1,:) = 0.25,0.7
+  xi_step_width(1,:) = 6
+/
+&hydro_init_pars
+/
+&pscalar_init_pars
+/
+&initial_condition_pars
+/
