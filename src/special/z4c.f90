@@ -1120,8 +1120,8 @@ module Special
         if (idiag_sqrtgm/=0.or.idiag_sqrtgKm/=0.or.idiag_sqrtgEm/=0) then
           tmp=q%chi**(-1.5)
           call sum_mn_name(tmp,idiag_sqrtgm)
-          call sum_mn_name(tmp*q%Ktr,idiag_sqrtgKm)
-          if (lgr_backreaction) call sum_mn_name(tmp*q%E,idiag_sqrtgEm)
+          if (idiag_sqrtgKm/=0) call sum_mn_name(tmp*q%Ktr,idiag_sqrtgKm)
+          if (idiag_sqrtgEm/=0) call sum_mn_name(tmp*q%E,idiag_sqrtgEm)
         endif
         if (idiag_hamnm/=0.or.idiag_hamnrms/=0) then
           tmp=q%trR**2+q%AA**2+((2./3.)*q%Ktr**2)**2
