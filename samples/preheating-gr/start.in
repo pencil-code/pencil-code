@@ -26,5 +26,5 @@
   initgr='scalar_bunch_davies'
   phi_bg=0.415, dphi_bg=-0.154, psi_bg=0., dpsi_bg=0.
   phimass=1., coupl_phipsi=500., psimass=0., lambda_psi=0.
-  ampl_vac=1e-6, xi_win=0.25
+  ampl_vac=1e-6, xi_win=0.125
 /
