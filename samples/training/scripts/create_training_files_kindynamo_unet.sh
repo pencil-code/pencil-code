@@ -20,7 +20,7 @@ project_name=project_2016901
 sample_name=kin-dynamo
 
 # Physics setup name
-physics_setup_name=default-physics-setup
+physics_setup_name=forcing-physics-setup
 
 # Model name
 model_name=kindynamo_unet
