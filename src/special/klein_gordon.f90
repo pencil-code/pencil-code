@@ -373,8 +373,8 @@ module Special
   logical :: lbubble_pos_on_grid=.false.
 
   logical, pointer :: lgr_metric
-  logical, parameter :: lgr_kg_backreaction=.true. !For now only scalar fields coupled with metric, no hydro yet so scalars fully
-                                                   ! source the metric.
+  logical, target:: lgr_kg_backreaction=.true. !For now only scalar fields coupled with metric, no hydro yet so scalars fully
+                                               ! source the metric.
 
   contains
 !****************************************************************************
