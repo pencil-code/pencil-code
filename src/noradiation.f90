@@ -115,6 +115,7 @@ module Radiation
       type (pencil_case) :: p
 
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_diagnostics_radiation
 !***********************************************************************

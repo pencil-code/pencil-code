@@ -540,9 +540,9 @@ module Diagnostics
       character, parameter:: comma=','
       character(len=256)  :: tform
       character(len=32)   :: cform_loc,cform_ext,tail
-      integer             :: iname,index_i,index_d,index_c,length,iname_loc
+      integer             :: iname,index_i,index_d,index_c,iname_loc
       logical             :: lcompl
-      integer             :: dlength,flength,mlength,nlength,dlength2,lenrank,lenloc
+      integer             :: dlength,flength,mlength,nlength,lenrank,lenloc
       character(len=4), dimension(4) :: addtexts
       integer, dimension(4) :: addlengths
 !
