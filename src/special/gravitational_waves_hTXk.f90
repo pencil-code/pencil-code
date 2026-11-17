@@ -142,7 +142,7 @@ module Special
 !
   logical :: lread_scl_factor_file_exists, lread_pulsar=.false.
   integer :: npulsar
-  integer :: nt_file, iTij=0, ilna=0
+  integer :: nt_file=0, iTij=0, ilna=0
   real :: lgt0, dlgt, H0, dummy
   real :: lgt_ini, a_ini, Hp_ini, appa_om=0,appa_om_init
 ! added variables
