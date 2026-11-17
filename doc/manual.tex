@@ -2498,6 +2498,7 @@ Since the diagnostics are performed on the CPUs each diagnostic output needs to 
 This is especially doing for power spectra, which requires a lot of communication and thus cannot be totally hidden since it competes with the time integration for access to the network.
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
+\label{S-nonequi-grid}
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
 
 We introduce a non-equidistant grid $z_i$
@@ -12086,6 +12087,12 @@ The advantage over adopting constant hyperdiffusion is that in the
 upwinding scheme hyperdiffusion is only applied where it is needed
 (i.e.~where advection is happening, hence the factor $|u|$).
  \index{Hyperviscosity}
+
+The generalization of the above to non-equidistant grids (section \ref{S-nonequi-grid}) is
+\begin{equation}
+  -u f'_{\rm(up,5th)}
+  = -u f'_{\rm(centr,6th)}  + \frac{|u|\,\zeta'}{60} \frac{d^6 f}{d \zeta} \; .
+\end{equation}
 
 The form (\ref{Eq-upwind-hyperdiff}) also suggests an easy way to get
 `stronger' upwinding: Rather than excluding more points in the downwind
