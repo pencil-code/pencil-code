@@ -6754,11 +6754,12 @@ module Initcond
     endsubroutine power_randomphase_hel
 !***********************************************************************
     subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor, &
-        lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv)
+        lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv,mass)
 !
 !  21-mar-25/axel: adapted from power_randomphase_hel
 !  21-may-25/axel: when kpeak<0, interpret is as sharp cutoff; powerlaw otherwise.
 !  12-apr-26/axel: added lappy_BD_k1D_factor, hardwired linv=T (indep of N, F -> scales with N^6 in 3-D)
+!  16-nov-26/TP: optional mass, omega=sqrt(k^2+mass^2) instead of k
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest, roptest
@@ -6771,6 +6772,7 @@ module Initcond
       real :: ampl, ampl_scaled, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
       real :: kNy_x, kNy_y, kNy_z
       logical, optional :: lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv
+      real, optional :: mass
 !
       if (ampl==0.) then
         if (lroot) print*,'bunch_davies: do nothing with variables i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
@@ -6872,6 +6874,14 @@ module Initcond
       endif
       if (lroot) k1(1,1,1) = 1.  ! To avoid division by zero.
 !
+!  Frequency omega
+!
+      if (present(mass)) then
+        r=sqrt(k1**2+mass**2)
+      else
+        r=k1
+      endif
+!
 !  Compute Bunch-Davies vacuum, A = e^(-i*k*eta)/sqrt(2*k), so
 !  E = -dA/deta = +i*k*e^(-i*k*eta)/sqrt(2*k) = i*e^(-i*k*eta)*sqrt(k/2)
 !  Here, v_im serves as a temporary array until the last line.
@@ -6880,11 +6890,11 @@ module Initcond
 !  exp(-i*k1) = cos(-i*k1) + i*sin(-i*k1)
 !
       do i=1,1+i1b-i1a
-        u_re(:,:,:,i)=+ampl_scaled*v_re(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
-        u_im(:,:,:,i)=+ampl_scaled*v_im(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
+        u_re(:,:,:,i)=+ampl_scaled*v_re(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
+        u_im(:,:,:,i)=+ampl_scaled*v_im(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
         if (i2a>0) then
-          v_re(:,:,:,i)=-k1*u_im(:,:,:,i)
-          v_im(:,:,:,i)=+k1*u_re(:,:,:,i)
+          v_re(:,:,:,i)=-r*u_im(:,:,:,i)
+          v_im(:,:,:,i)=+r*u_re(:,:,:,i)
         endif
       enddo
 !
