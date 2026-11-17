@@ -69,13 +69,13 @@ module InitialCondition
   real :: phi0=0., hplus0=0., hcross0=0.
   integer :: nkgr=1
   character(len=labellen) :: perturb_dir='x'
-  real :: phi_bg=0., dphi_bg=0., psi_bg=0., dpsi_bg=0., ampl_vac=1e-6, xi_win=0.125
+  real :: phi_bg=0., dphi_bg=0., psi_bg=0., dpsi_bg=0., ampl_vac=1e-6, xi_win=0.125, kappa_win=0.75
   real :: phimass=1., psimass=0., coupl_phipsi=0., lambda_psi=0.
   logical :: lalp_Phi=.true.
 !
   namelist /initial_condition_pars/ initgr, H0, e0, alpha0, a0, beta0, nkgr, &
       delta0, theta0, eta0, eta_alfven, phi0, perturb_dir, hplus0, hcross0, &
-      phi_bg, dphi_bg, psi_bg, dpsi_bg, ampl_vac, xi_win, lalp_Phi, &
+      phi_bg, dphi_bg, psi_bg, dpsi_bg, ampl_vac, xi_win, kappa_win, lalp_Phi, &
       phimass, psimass, coupl_phipsi, lambda_psi
 !
   integer :: ichi=0, iKh=0, ith=0, ialp=0
@@ -311,9 +311,10 @@ module InitialCondition
 !  Pi = Pi_bg - i omega df - H df (e^-i omega t, deriv_prefactor=-1).
 !  bunch_davies gives the variance sum_k ampl^2 W^2/(2 omega), so
 !  ampl = ampl_vac/sqrt(L^3) gives int d^3k/(2pi)^3 ampl_vac^2 W^2/(2 omega).
-!  Its window (1-tanh[5 (k/kpeak-1)])/2 is that of Giblin & Tishue (eq. 38)
-!  with kpeak = 2 pi sqrt(3) N xi_win/L, except that their steepness is
-!  kappa sqrt(3) N xi_win (=5.2 for kappa=0.75, N xi_win=4). The k=0 mode of
+!  Its window is that of Giblin & Tishue (eq. 38),
+!    W = (1-tanh[kappa_win (n - n_c)])/2,  n = k L/(2 pi),  n_c = sqrt(3) N xi_win,
+!  i.e. (1-tanh[ksteepness (k/kpeak-1)])/2 of bunch_davies with
+!  kpeak = 2 pi n_c/L and ksteepness = kappa_win n_c. The k=0 mode of
 !  bunch_davies (computed with k=1) is removed by subtracting the mean.
 !
 !  Metric: gamma_ij = exp(-2 Phi) delta_ij, alpha = 1+Phi (lalp_Phi),
@@ -375,13 +376,13 @@ module InitialCondition
         endif
         f(l1:l2,m1:m2,n1:n2,kfield)=0.; f(l1:l2,m1:m2,n1:n2,kmom)=0.
         call bunch_davies(f,kfield,kfield,kmom,kmom,ampl,2*pi*kc/Lx,-1.,linv=.true., &
-                          mass=sqrt(meff2(ifld)))
+                          mass=sqrt(meff2(ifld)),ksteepness=kappa_win*kc)
         do k=kfield,kmom,kmom-kfield
           call mpiallreduce_sum(sum(f(l1:l2,m1:m2,n1:n2,k))/nwgrid,fm)
           f(l1:l2,m1:m2,n1:n2,k)=f(l1:l2,m1:m2,n1:n2,k)-fm
         enddo
         var_loc(ifld)=sum(f(l1:l2,m1:m2,n1:n2,kfield)**2)/nwgrid
-        var_exp(ifld)=sum(ampl**2*(0.5*(1.-tanh(5.*(kk*Lx/(2*pi*kc)-1.))))**2 &
+        var_exp(ifld)=sum(ampl**2*(0.5*(1.-tanh(kappa_win*kc*(kk*Lx/(2*pi*kc)-1.))))**2 &
                           /(2*sqrt(kk**2+meff2(ifld))),mask=kk>0.)
 !  Spectral gradient of the fluctuation.
         are=f(l1:l2,m1:m2,n1:n2,kfield); aim=0.
