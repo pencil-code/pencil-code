@@ -25,7 +25,8 @@ class TestKinDynamoModels(unittest.TestCase):
 
         self.out_channels = 3
 
-        self.x = torch.rand((self.batch_size, self.in_channels, self.x_size, self.y_size, self.z_size), device=self.device)
+        self.U_x = torch.rand((self.batch_size, int(self.in_channels/2), self.z_size, self.y_size, self.x_size), device=self.device)
+        self.B_x = torch.rand((self.batch_size, int(self.in_channels/2), self.z_size, self.y_size, self.x_size), device=self.device)
 
         self.expected_output_size = torch.Size((self.batch_size, self.out_channels, self.x_size, self.y_size, self.z_size))
 
@@ -40,7 +41,7 @@ class TestKinDynamoModels(unittest.TestCase):
 
         # Test output size
         model = KinDynamo_LeNet5ForSegmentation().to(self.device)
-        mean_residual_emf = model.forward(self.x)
+        mean_residual_emf = model.forward(self.U_x, self.B_x)
         self.assertEqual(mean_residual_emf.size(), self.expected_output_size)
 
 
@@ -57,6 +58,7 @@ class TestKinDynamoModels(unittest.TestCase):
 
     ##### KinDynamo_TBNN #####
 
+    # TODO: Add output size test from should_exclude_B_x_from_inference_of_alpha_and_eta=False
     def test_kindynamo_tbnn_output_size(self):
         """
         Test the forward() function output size of model KinDynamo_TBNN, defined in file kindynamo_tbnn.py.
@@ -65,13 +67,15 @@ class TestKinDynamoModels(unittest.TestCase):
 
         second_level_channels = 16
         spacing_val = 5
+        should_exclude_B_x_from_inference_of_alpha_and_eta = True
 
         # Test output size
-        model = KinDynamo_TBNN(in_channels=self.in_channels, out_channels=self.out_channels, second_level_channels=second_level_channels, spacing_val=spacing_val).to(self.device)
-        mean_residual_emf = model.forward(self.x)
+        model = KinDynamo_TBNN(in_channels=self.in_channels, out_channels=self.out_channels, second_level_channels=second_level_channels, spacing_val=spacing_val, should_exclude_B_x_from_inference_of_alpha_and_eta=should_exclude_B_x_from_inference_of_alpha_and_eta).to(self.device)
+        mean_residual_emf = model.forward(self.U_x, self.B_x)
         self.assertEqual(mean_residual_emf.size(), self.expected_output_size)
 
 
+    # TODO: Make this output value test be for should_exclude_B_x_from_inference_of_alpha_and_eta=True, and add output value test for should_exclude_B_x_from_inference_and_of_alpha_and_eta=False
     def test_kindynamo_tbnn_output_values(self):
         """
         Test the forward() function output values of model KinDynamo_TBNN, defined in file kindynamo_tbnn.py.
@@ -95,7 +99,7 @@ class TestKinDynamoModels(unittest.TestCase):
 
         # Test output size
         model = KinDynamo_UNet(in_channels=self.in_channels, out_channels=self.out_channels, second_level_channels=second_level_channels).to(self.device)
-        mean_residual_emf = model.forward(self.x)
+        mean_residual_emf = model.forward(self.U_x, self.B_x)
         self.assertEqual(mean_residual_emf.size(), self.expected_output_size)
 
 
