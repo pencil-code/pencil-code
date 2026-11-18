@@ -599,8 +599,8 @@ module Boundcond
       integer :: j
 
       logical :: lget,lboth
-      integer, dimension(max(1,mvar)), save :: ilayer=0
-      real, dimension(mvar), save :: last_gettime
+      integer, dimension(max(1,mvar_max)), save :: ilayer=0
+      real, dimension(mvar_max), save :: last_gettime
       real, save :: timediff
       real, allocatable, dimension(:,:,:), save :: ahead_data
       real :: w

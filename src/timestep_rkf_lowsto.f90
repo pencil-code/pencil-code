@@ -28,7 +28,7 @@ module Timestep
 !
   include 'timestep.h'
 !
-  real, dimension(mvar) :: farraymin
+  real, dimension(mvar_max) :: farraymin
   real, dimension (:,:,:,:), allocatable, target :: f1
   real, contiguous, dimension (:,:,:,:), pointer :: farr
   real, dimension (:,:,:,:), allocatable :: errdf

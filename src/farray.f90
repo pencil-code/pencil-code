@@ -11,7 +11,8 @@
 !
 module FArrayManager
 !
-  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu,ldynamic_aux,maux_com_decl,set_aux_counts
+  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu,ldynamic_aux,maux_com_decl,set_aux_counts, &
+                    mvar_decl,mvar_max,ldynamic_mvar,set_mvar,intlen
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
                    n_odevars,f_ode,df_ode,lode,f_ode_diagnostics,variable_substepped
   use HDF5_IO, only: index_reset, index_append
@@ -128,7 +129,7 @@ module FArrayManager
 ! With DYNAMIC_AUX=yes: next free f-array slots for communicated and
 ! non-communicated auxiliaries.
 !
-  integer :: icom_next=mvar+1, iaux_next=mvar+maux_com_decl+1
+  integer :: icom_next=mvar_decl+1, iaux_next=mvar_decl+maux_com_decl+1
   logical :: laux_fixed=.false.
 !
 ! With DYNAMIC_AUX=yes: global variables sit behind the auxiliaries, so they
@@ -332,6 +333,7 @@ module FArrayManager
 !
         select case (vartype)
           case (iFARRAY_TYPE_PDE)
+            if (nvar+nvars>mvar .and. ldynamic_mvar) call grow_mvar(varname,nvar+nvars)
             if (nvar+nvars>mvar) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
@@ -517,6 +519,46 @@ module FArrayManager
 !
     endsubroutine dynamic_aux_slot
 !***********************************************************************
+    subroutine grow_mvar(varname,mvar_new)
+!
+!  Increases mvar to mvar_new if more evolved variables are registered than
+!  declared by the MVAR CONTRIBUTION headers (DYNAMIC_FIELD_ALLOC).
+!  The auxiliaries start behind the evolved variables and their indices are
+!  already known to the registering modules, so this is only possible as long
+!  as no auxiliary has been registered; the globals are moved.
+!
+!  17-nov-26/Claude: coded
+!
+      character (len=*), intent(in) :: varname
+      integer,           intent(in) :: mvar_new
+!
+      character (len=intlen) :: cnum
+      integer :: delta
+!
+      delta=mvar_new-mvar
+      if (delta<=0) return
+      write(cnum,'(i0)') mvar_new
+!
+      if (laux_fixed) call fatal_error("farray_register_variable", &
+          "Registering "//trim(varname)//" fails: the f-array has already been allocated. "// &
+          "Register it in register_* instead of initialize_*, or declare it by an "// &
+          "MVAR CONTRIBUTION header in cparam.local.")
+      if (naux>0) call fatal_error("farray_register_variable", &
+          "Registering "//trim(varname)//" fails: mvar cannot grow to "//trim(cnum)// &
+          " after auxiliaries have been registered. Declare the evolved variables "// &
+          "by an MVAR CONTRIBUTION header in cparam.local.")
+      if (mvar_new>mvar_max) call fatal_error("farray_register_variable", &
+          "Registering "//trim(varname)//" fails: mvar="//trim(cnum)//" exceeds mvar_max. "// &
+          "Increase DYNAMIC_AUX_EXTRA in Makefile.local or declare the evolved variables "// &
+          "by an MVAR CONTRIBUTION header in cparam.local.")
+!
+      icom_next=icom_next+delta
+      iaux_next=iaux_next+delta
+      call shift_globals(delta)
+      call set_mvar(mvar_new)
+!
+    endsubroutine grow_mvar
+!***********************************************************************
     subroutine shift_globals(delta)
 !
 !  Moves the global variables by delta slots when maux changes (DYNAMIC_AUX=yes).
@@ -573,7 +615,7 @@ module FArrayManager
         !                         vector=globals_dyn(i)%vector,array=globals_dyn(i)%array,ldown=.true.)
       enddo
 !
-      if (mcom/=mvar+maux_com_decl) call allocate_comm_buffers
+      if (mcom/=mvar_decl+maux_com_decl) call allocate_comm_buffers
       if (lgpu) call farray_vtxbuf_resize(mfarray)
       laux_fixed=.true.
 !

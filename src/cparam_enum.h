@@ -997,3 +997,4 @@ integer, parameter :: enum_noadvectionZspitzer_string = 987
 integer, parameter :: enum_rappazzo_string = 988
 integer, parameter :: enum_schrijver04_string = 989
 integer, parameter :: enum_spitzer_string = 990
+integer, parameter :: enum_1ZlogZmean_string = 991

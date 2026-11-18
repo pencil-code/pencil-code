@@ -19,7 +19,7 @@ module Timestep
   real, parameter :: dt_decrease      = -0.25
   real, parameter :: dt_increase      = -0.20
   real            :: errcon
-  real, dimension(mvar) :: farraymin
+  real, dimension(mvar_max) :: farraymin
 !
   contains
 !

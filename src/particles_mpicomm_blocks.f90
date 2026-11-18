@@ -36,7 +36,7 @@ module Particles_mpicomm
 !
   real, dimension (:,:,:,:,:), allocatable :: fb   ! allocated in initialize_particles_mpicomm,
                                                     ! when mfarray is final
-  real, dimension (mxb,myb,mzb,mvar,0:nblockmax-1) :: dfb
+  real, dimension (mxb,myb,mzb,mvar_max,0:nblockmax-1) :: dfb
 !
   integer, dimension (mpar_loc) :: inearblock
   integer, dimension (0:nblockmax-1) :: ibrick_parent_block, iproc_parent_block

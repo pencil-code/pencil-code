@@ -17,7 +17,7 @@ module Timestep
 ! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.95
   real            :: errcon, dt_increase, dt_decrease
-  real, dimension(mvar) :: farraymin
+  real, dimension(mvar_max) :: farraymin
 !
   contains
 !

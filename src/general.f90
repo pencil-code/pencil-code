@@ -7765,6 +7765,8 @@ iloop:do i=1,size(list2)
         dst = enum_Zbvec_string
       case('1+log')
         dst = enum_1Zlog_string
+      case('1+log-mean')
+        dst = enum_1ZlogZmean_string
       case('harmonic')
         dst = enum_harmonic_string
       case('frozen')

@@ -3200,6 +3200,8 @@ module Special
     call copy_addr(lradial_ensemble,p_par(85)) ! bool
     call copy_addr(nrealizations,p_par(86)) ! int
     call copy_addr(c_sextic,p_par(87))
+    call copy_addr(cdt_mass,p_par(88))
+    call copy_addr(lgr_kg_backreaction,p_par(89)) ! bool
 
     endsubroutine pushpars2c
 !********************************************************************

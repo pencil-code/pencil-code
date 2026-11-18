@@ -22,7 +22,7 @@ module Timestep
   real, parameter :: errcon           = 0.1296
   real, parameter :: grow             = 1.5
   real, parameter :: shrnk            = 0.5
-  real, dimension(mvar) :: farraymin
+  real, dimension(mvar_max) :: farraymin
 ! Shampine parameters
   real, parameter :: gam      = 1.0 / 2.0
   real, parameter :: a21      = 2.0

@@ -4,6 +4,10 @@
 #if LZ4C
 Kernel z4c_before_boundary()
 {
+	if(AC_enum_lapse_type__mod__z4c == AC_enum_1zlogzmean_string__mod__cparam)
+	{
+		reduce_sum(value(F_KH)/nwgrid,AC_khm__mod__z4c)
+	}
 	if(AC_lenforce_algebraic__mod__z4c)
 	{
 		g11 = value(F_GT_1)

@@ -33,7 +33,7 @@ module Special
   real :: bullets_t0=0.,bullets_dt=0.
   real :: bullets_h0=0.,hyper3_diffrho=0.
   logical :: lfilter_farray=.false.,lrad_loss=.false.
-  real, dimension(mvar) :: filter_strength=0.01
+  real, dimension(mvar_max) :: filter_strength=0.01
   real :: Ltot,R_hyper3=0.
   real, dimension (nx) :: diffus_chi
 !

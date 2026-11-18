@@ -64,12 +64,13 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #                      since by now we write at least three files, so all
 #                      of them should just be hard-coded in this script.
 #   --num-special=<n> -- number of special modules to be inserted in "cparam.inc".
-#   --dynamic-aux=<n> -- make maux, maux_com, mfarray and mcom run-time
-#                      variables which grow when more auxiliaries are
-#                      registered than declared by MAUX CONTRIBUTION and
-#                      COMMUNICATED AUXILIARIES. <n> is the extra capacity
-#                      of the fixed-size per-variable arrays (bcx, ...),
-#                      see maux_max, maux_com_max.
+#   --dynamic-aux=<n> -- make mvar, maux, maux_com, mfarray and mcom run-time
+#                      variables which grow when more variables are
+#                      registered than declared by MVAR CONTRIBUTION,
+#                      MAUX CONTRIBUTION and COMMUNICATED AUXILIARIES.
+#                      <n> is the extra capacity of the fixed-size
+#                      per-variable arrays (bcx, ...), see mvar_max,
+#                      maux_max, maux_com_max.
 # Example:
 #     mkcparam entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
 #
@@ -323,8 +324,12 @@ EOF
 if (defined $dynamic_aux) {
   # Auxiliary counts are run-time variables, which FArrayManager increases
   # when more auxiliaries are registered than declared.
+  # The number of evolved variables is a run-time variable as well, which
+  # FArrayManager increases when more are registered than declared.
   $data_cparam .= <<"EOF";
-integer, parameter :: mvar=${\($mvar+0)}
+integer, parameter :: mvar_decl=${\($mvar+0)}, mvar_max=mvar_decl+${\($dynamic_aux+0)}
+logical, parameter :: ldynamic_mvar=.true.
+integer :: mvar=mvar_decl  ! DSL: mvar_max
 integer, parameter :: maux_decl=${\($maux+0)}, maux_com_decl=${\($maux_com+0)}
 integer, parameter :: mogaux=${\($mogaux+0)}
 integer, parameter :: mglobal=${\($mglobal+0)}
@@ -336,12 +341,14 @@ integer, parameter :: maux_max=maux_decl+${\($dynamic_aux+0)}, maux_com_max=maux
 ! (capacity), see scripts/cparam.sed.
 integer :: maux=maux_decl  ! DSL: maux_max
 integer :: maux_com=maux_com_decl  ! DSL: maux_com_max
-integer :: mfarray=mvar+maux_decl+mglobal+mscratch  ! DSL: mvar+maux_max+mglobal+mscratch
-integer :: mcom=mvar+maux_com_decl  ! DSL: mvar+maux_com_max
+integer :: mfarray=mvar_decl+maux_decl+mglobal+mscratch  ! DSL: mvar+maux_max+mglobal+mscratch
+integer :: mcom=mvar_decl+maux_com_decl  ! DSL: mvar+maux_com_max
 EOF
 } else {
   $data_cparam .= <<"EOF";
 integer, parameter :: mvar=${\($mvar+0)}, maux=${\($maux+0)}
+integer, parameter :: mvar_decl=mvar, mvar_max=mvar
+logical, parameter :: ldynamic_mvar=.false.
 integer, parameter :: maux_com=${\($maux_com+0)}
 integer, parameter :: mogaux=${\($mogaux+0)}
 integer, parameter :: mglobal=${\($mglobal+0)}
@@ -546,6 +553,21 @@ contains
 !
   endsubroutine set_aux_counts
 EOF
+  $data_cparam_aux .= <<"EOF";
+!***********************************************************************
+  subroutine set_mvar(mvar_new)
+!
+!  Sets the number of evolved variables and the derived sizes.
+!  Only to be called by FArrayManager.
+!
+    integer, intent(in) :: mvar_new
+!
+    mvar=mvar_new
+    mfarray=mvar+maux+mglobal+mscratch
+    mcom=mvar+maux_com
+!
+  endsubroutine set_mvar
+EOF
 } else {
   $data_cparam_aux .= <<"EOF";
 contains
@@ -557,6 +579,14 @@ contains
     integer, intent(in) :: maux_new, maux_com_new
 !
   endsubroutine set_aux_counts
+!***********************************************************************
+  subroutine set_mvar(mvar_new)
+!
+!  Dummy: without --dynamic-aux the number of evolved variables is a parameter.
+!
+    integer, intent(in) :: mvar_new
+!
+  endsubroutine set_mvar
 EOF
 }
 update_file ("cparam_aux.inc", $data_cparam_aux);

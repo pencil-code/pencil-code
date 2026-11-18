@@ -424,6 +424,9 @@ static int lac_sparse_autotuning = 0;
 //Run-time auxiliary counts (macros maux, maux_com, mfarray, mcom in cparam.inc_c.h with DYNAMIC_AUX), set in setupConfig
 EXTERN_C int pc_maux, pc_maux_com, pc_mfarray, pc_mcom;
 int pc_maux = 0, pc_maux_com = 0, pc_mfarray = 0, pc_mcom = 0;
+//Likewise the run-time number of evolved variables (macro mvar)
+EXTERN_C int pc_mvar;
+int pc_mvar = 0;
 //Point to maux_vtxbuf_index and read_vtxbuf_from_gpu of Cdata (size >= mfarray), set in initializeGPU
 static int* maux_vtxbuf_index = NULL;
 static int* read_vtxbuf_from_gpu = NULL;
@@ -454,6 +457,7 @@ void setupConfig(AcMeshInfo& config)
   pc_maux_com = pc_maux_com__mod__cdata;
   pc_mfarray  = pc_mfarray__mod__cdata;
   pc_mcom     = pc_mcom__mod__cdata;
+  pc_mvar     = pc_mvar__mod__cdata;
 
   //TP: this is because we non-communicated auxs might be registered before communicated ones
   //TP: the whole think with maux_vtxbuf_index is a bit of a mess...
@@ -2935,7 +2939,9 @@ void copyFarray(AcReal* f, const bool read_particles)
 {
   //user_constants.h declares mfarray with its DSL value (capacity incl. DYNAMIC_AUX extra slots),
   //which would shadow the run-time number of f-array slots (= size of maux_vtxbuf_index)
+  //The same holds for mvar.
   const int nfarray = mfarray;
+  const int nvar_pde = mvar;
   #include "user_constants.h"
 
   acGridSynchronizeStream(STREAM_ALL);
@@ -2944,7 +2950,7 @@ void copyFarray(AcReal* f, const bool read_particles)
   //If doing training we read all since we might want TAU components to calculate e.g. validation error
   const int all_vtxbufs = acGetNumFields();
   const int end = ltraining ? acGetNumFields(): 
-	  	  lread_all_vars_from_device ? nfarray : mvar;
+	  	  lread_all_vars_from_device ? nfarray : nvar_pde;
 
   AcMesh* dst = &mesh;
   //Destroyed on every path out of this function
@@ -2964,7 +2970,7 @@ void copyFarray(AcReal* f, const bool read_particles)
   {
 	  //Have to specialize for training for now since we are reading fields that do not exist in Fortran: TODO: allocate fields on the CPU in Fortran
 	  const int index = ltraining ? i : 
-		  	    i < mvar ? i :
+		  	    i < nvar_pde ? i :
 			    i < nfarray ?  maux_vtxbuf_index[i] : -1;
 	  bool read_var = (i < end);
 	  read_var |= (read_vtxbuf_from_gpu[i]);
@@ -2980,7 +2986,7 @@ void copyFarray(AcReal* f, const bool read_particles)
   {
   	for (int i = 0; i < end; ++i)
   	{
-		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		const int index = (i < nvar_pde) ? i : maux_vtxbuf_index[i];
 		if (index == -1) continue;
  		if (nxgrid != 1)
 		{
@@ -3012,7 +3018,7 @@ void copyFarray(AcReal* f, const bool read_particles)
   {
     	for (int i = 0; i < end; ++i)
   	{
-		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		const int index = (i < nvar_pde) ? i : maux_vtxbuf_index[i];
 		if (index == -1) continue;
 		const size_t f_index = (NGHOST) + mx*(NGHOST + my*(NGHOST));
 		const size_t ac_index = 0;
@@ -3023,7 +3029,7 @@ void copyFarray(AcReal* f, const bool read_particles)
   {
     	for (int i = 0; i < end; ++i)
   	{
-		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		const int index = (i < nvar_pde) ? i : maux_vtxbuf_index[i];
 		if (index == -1) continue;
 		for (int x = 0; x < nx; ++x)
 		{

@@ -265,6 +265,11 @@ const bool AC_lallow_bprime_zero__mod__disp_current = false
 #include "../axionSU2back.h"
 #include "../backreact_infl.h"
 
+#if LZ4C
+//Volume average of Khat for lapse_type='1+log-mean' (Khm in special/z4c), reduced in z4c_before_boundary
+output global real AC_khm__mod__z4c
+#endif
+
 #if LPOLYMER
 #else
 const real AC_trelax_poly__mod__cdata = 0.0

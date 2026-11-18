@@ -4,7 +4,6 @@
 !
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
-! MVAR CONTRIBUTION 12
 !
 !***************************************************************
 integer, parameter :: ncpus=4,nprocy=1,nprocz=1,nprocx=ncpus/(nprocy*nprocz)

@@ -1288,6 +1288,8 @@ module Special
     call copy_addr(lenforce_algebraic,p_par(24)) ! bool
     call copy_addr(chi_floor,p_par(25))
     call copy_addr(iTij,p_par(26)) ! int
+    call copy_addr(lscalar_src,p_par(27)) ! bool
+    call copy_addr(lscalar2_src,p_par(28)) ! bool
 
   endsubroutine pushpars2c
 !***********************************************************************

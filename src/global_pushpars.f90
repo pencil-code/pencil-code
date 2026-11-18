@@ -22,7 +22,7 @@ contains
     logical, save :: luses_aa_pwd_bot = .false.
     logical, save :: luses_aa_pfe_top = .false.
     logical, save :: luses_aa_pfe_bot = .false.
-    integer, save :: pc_maux, pc_maux_com, pc_mfarray, pc_mcom   ! copies: maux etc. are parameters without DYNAMIC_AUX
+    integer, save :: pc_mvar, pc_maux, pc_maux_com, pc_mfarray, pc_mcom   ! copies: maux etc. are parameters without DYNAMIC_AUX
     integer :: j
 
     call copy_addr(ncoarse,p_par(1)) ! int
@@ -243,7 +243,8 @@ contains
     call copy_addr(nphis,p_par(404))    ! int (my)
     call copy_addr(nphis1,p_par(405))   !     (my)
     call copy_addr(nphis2,p_par(406))   !     (my)
-    pc_maux=maux; pc_maux_com=maux_com; pc_mfarray=mfarray; pc_mcom=mcom
+    pc_maux=maux; pc_maux_com=maux_com; pc_mfarray=mfarray; pc_mcom=mcom; pc_mvar=mvar
+    call copy_addr(pc_mvar,p_par(1456)) ! int
     call copy_addr(pc_maux,p_par(1444)) ! int
     call copy_addr(pc_maux_com,p_par(1445)) ! int
     call copy_addr(pc_mfarray,p_par(1446)) ! int

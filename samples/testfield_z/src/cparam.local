@@ -7,7 +7,6 @@
 ! Use MVAR to reserve the appropriate workspace for testfield_z.f90
 ! At the end of this file, njtest must be set such that 3*njtest=MVAR.
 !
-! MVAR CONTRIBUTION 12
 !
 !***************************************************************************
 !  Local settings concerning grid size and number of CPUs.
