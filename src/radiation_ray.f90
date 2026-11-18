@@ -149,7 +149,7 @@ module Radiation
   integer :: idiag_Qradrms=0, idiag_Qradmax=0
   integer :: idiag_Fradzm=0, idiag_kapparhom=0, idiag_Sradm=0
   integer :: idiag_Fradzmz=0, idiag_kapparhomz=0, idiag_taumz=0
-  integer :: idiag_crad=0
+  integer :: idiag_crad=0, idiag_csrad=0, idiag_cseff=0, idiag_csdt=0
   integer :: idiag_dtchi=0, idiag_dtrad=0
   integer :: ivid_Jrad=0, ivid_Isurf=0
 !
@@ -2619,6 +2619,11 @@ module Radiation
         lpenc_requested(i_rho1)=.true.
         if (ltemperature) lpenc_requested(i_cv1)=.true.
         if (idiag_crad>0) lpenc_requested(i_rho1)=.true.
+        if (idiag_csrad>0.or.idiag_cseff>0.or.idiag_csdt>0) then
+          lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_TT)=.true.
+        endif
+        if (idiag_cseff>0.or.idiag_csdt>0) lpenc_requested(i_cs2)=.true.
       endif
 !
     endsubroutine pencil_criteria_radiation
@@ -2686,7 +2691,7 @@ module Radiation
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (nx) :: Qrad2, crad
+      real, dimension (nx) :: Qrad2, crad, csrad2, csdt2
       type (pencil_case) :: p
 !
       if (ldiagnos) then
@@ -2713,6 +2718,25 @@ module Radiation
         if (idiag_crad>0) then
           crad=fourthird*p%rho1*Srad(l1:l2,m,n)/c_light
           call sum_mn_name(crad,idiag_crad,lsqrt=.true.)
+        endif
+!
+!  csrad: radiation contribution to the (thick-limit) sound speed,
+!  csrad^2 = (gamma-1)*(4/3)*a_rad*T^4/rho = 4*pi*(gamma-1)*crad^2,
+!  from adiabatic compression, dT/T=(gamma-1)drho/rho, p_rad=a_rad*T^4/3.
+!  cseff^2 = cs^2 + csrad^2 is the long-wavelength wave speed.
+!
+        if (idiag_csrad>0.or.idiag_cseff>0.or.idiag_csdt>0) then
+          csrad2=(gamma-1.)*(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
+          if (idiag_csrad>0) call sum_mn_name(csrad2,idiag_csrad,lsqrt=.true.)
+          if (idiag_cseff>0) call sum_mn_name(p%cs2+csrad2,idiag_cseff,lsqrt=.true.)
+!
+!  csdt: grid-scale speed entering the time-step limit (heuristic):
+!  csdt^2 = cs^2 + csrad^2/(1+(k_Ny*lambda)^2), k_Ny=pi/dx, lambda=1/kapparho.
+!
+          if (idiag_csdt>0) then
+            csdt2=p%cs2+csrad2/(1.+pi**2*dxyz_2/f(l1:l2,m,n,ikapparho)**2)
+            call sum_mn_name(csdt2,idiag_csdt,lsqrt=.true.)
+          endif
         endif
 !
 !  Here we divide again by kapparho, so we get actual Frad.
@@ -2799,7 +2823,7 @@ module Radiation
       if (lreset) then
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_kapparhom=0; idiag_Sradm=0
         idiag_Fradzmz=0; idiag_kapparhomz=0; idiag_taumz=0
-        idiag_crad=0
+        idiag_crad=0; idiag_csrad=0; idiag_cseff=0; idiag_csdt=0
         idiag_dtchi=0; idiag_dtrad=0
         ivid_Jrad=0; ivid_Isurf=0
       endif
@@ -2813,6 +2837,9 @@ module Radiation
         call parse_name(iname,cname(iname),cform(iname),'kapparhom',idiag_kapparhom)
         call parse_name(iname,cname(iname),cform(iname),'Sradm',idiag_Sradm)
         call parse_name(iname,cname(iname),cform(iname),'crad',idiag_crad)
+        call parse_name(iname,cname(iname),cform(iname),'csrad',idiag_csrad)
+        call parse_name(iname,cname(iname),cform(iname),'cseff',idiag_cseff)
+        call parse_name(iname,cname(iname),cform(iname),'csdt',idiag_csdt)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
       enddo
