@@ -412,14 +412,14 @@ module Diagnostics
 
             if (iname_loc>0) then               ! extremum with location
 !
-!  Expand the data item into location indicesn and rank.
+!  Expand the data item into location indices and rank.
 !
               call expand_1Dindex(fname_keep(iname),ix_loc,iy_loc,iz_loc,rank=rank)
-              call find_proc_coords(rank,ipx_loc,ipy_loc,ipz_loc)    ! proc coordinates from rank
-              if (index(cform(iname_loc),'.0')/=0) then     ! integer-implying format -> global indices in timeseries
+              call find_proc_coords(rank,ipx_loc,ipy_loc,ipz_loc) ! proc coordinates from rank
+              if (index(cform(iname_loc),'.0')/=0) then           ! "integer" format -> global indices in timeseries
                 call insert(buffer,(/real(ix_loc+ipx_loc*nx),real(iy_loc+ipy_loc*ny),real(iz_loc+ipz_loc*nz), &
                             real(rank)/),inamel+1,nnamel)
-              else                                          ! float-implying format -> coordinates in timeseries
+              else                                                ! float format -> coordinates in timeseries
                 call insert(buffer,(/xgrid(ix_loc+ipx_loc*nx),ygrid(iy_loc+ipy_loc*ny),zgrid(iz_loc+ipz_loc*nz), &
                             real(rank)/),inamel+1,nnamel)
               endif
@@ -1603,7 +1603,7 @@ contains
 
         if (scan(cform(1:1), 'eEdDgG')==1) then
 !
-!  Increase d in [ED]w.d if insufficient to hold a sign.
+!  Increase w in [ED]w.d if insufficient to hold a sign.
 !
           if (scan(cform(1:1), "eEdD")==1) then
 
@@ -1615,7 +1615,7 @@ contains
               read(tmp,*) idecs
               idiff=iwidth-idecs-7
               if (idiff<0) then
-                cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
+                cform=cform(1:1)//trim(itoa(iwidth-idiff+1))//cform(index_i:)
 !
 !  Put changed format back into cname.
 !
