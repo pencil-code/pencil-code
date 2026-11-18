@@ -214,6 +214,7 @@ my %tests = (
                          mdwarf-ss-running-aver
                          mdwarf-ss-running-aver-gpu
 			 star-in-a-box-giant-Kprof
+			 preheating-gr
 			 cartesian-convection-entropy-rain
 			 1d-tests/read_ell_from_table_corrected
 			 0d-tests/coala
@@ -289,6 +290,7 @@ my @gpu_tests = qw(
 			 interstellar
                          renovating-flow
                          chiral-diffusion
+			 preheating-gr
 			 1d-tests/rel-shock
 			 1d-tests/KT
 			 1d-tests/ambipolar_diffusion
