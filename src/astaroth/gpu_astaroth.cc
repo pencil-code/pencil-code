@@ -840,7 +840,7 @@ void save_stats(std::string fileName) {
 
     // Headers
     if (lhydro) {
-      if (AC_lconservative__mod__hydro) {
+      if (lconservative__mod__hydro) {
         myFile << ",in_acc_sum_rho";
         myFile << ",in_acc_sum_sq_rho";
 
@@ -862,7 +862,7 @@ void save_stats(std::string fileName) {
     }
 
       if (ltrain_mag__mod__training) {
-        if (AC_lconservative__mod__hydro) {
+        if (lconservative__mod__hydro) {
           for (const auto &s : vec_suffix) myFile << ",in_acc_sum_uu" << s;
           for (const auto &s : vec_suffix) myFile << ",in_acc_sum_sq_uu" << s;
         }
@@ -884,7 +884,7 @@ void save_stats(std::string fileName) {
 
     // Hydro statistics
     if (lhydro) {
-      if (AC_lconservative__mod__hydro) {
+      if (lconservative__mod__hydro) {
 
         // density
         myFile << "," << acDeviceGetOutput(acGridGetDevice(), in_acc_sum_rho);
@@ -908,7 +908,7 @@ void save_stats(std::string fileName) {
         write_fields(out_acc_sum_sq_tau, 6);
     }
     if(ltrain_mag__mod__training) {
-      if (AC_lconservative__mod__hydro) {
+      if (lconservative__mod__hydro) {
         // uumean
         write_fields(in_acc_sum_uu, 3);
         write_fields(in_acc_sum_sq_uu, 3);
@@ -991,7 +991,7 @@ void load_train_stats() {
       acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
       size_t i_count = 2;
       if (lhydro) {
-        if (AC_lconservative__mod__hydro) {
+        if (lconservative__mod__hydro) {
 
           acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_rho, (AcReal)std::stod(row[i_count++]));
 
@@ -1042,7 +1042,7 @@ void load_train_stats() {
       }
       if (ltrain_mag__mod__training) {
 
-        if (AC_lconservative__mod__hydro) {
+        if (lconservative__mod__hydro) {
           for (size_t i = 0; i < 3; ++i) {
             acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_uu[i], (AcReal)std::stod(row[i_count++]));
           }
@@ -1225,7 +1225,7 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
 
   if (lhydro) {
 
-    if (AC_lconservative__mod__hydro) {
+    if (lconservative__mod__hydro) {
       acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
       inputs.emplace_back(input, 3);
       acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
@@ -1308,16 +1308,17 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
 
   *loss_val=DBL_MAX;
 
+  std::vector<std::pair<AcReal*, int>> inputs;
+    
+  std::vector<std::pair<AcReal*, int>> outputs;
+
   if (lhydro){
   
-    std::vector<std::pair<AcReal*, int>> inputs;
-    std::vector<std::pair<AcReal*, int>> outputs;
-
     AcReal* out = NULL;
     AcReal* input = NULL;
     AcReal* output = NULL;
 
-    if (AC_lconservative__mod__hydro) {
+    if (lconservative__mod__hydro) {
       // dynamic field handel acGetmomentum_sgs_Xx()
       acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
       inputs.emplace_back(input, 3);
@@ -1325,6 +1326,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
       inputs.emplace_back(input, 1);
       acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_STRAIN_XX(), &output, &out);
       outputs.emplace_back(output, 6);
+      
     } else {
 
       acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
@@ -1333,42 +1335,37 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
     outputs.emplace_back(output, 6);
 
-    acGridHaloExchange();
-    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val, name);
-    train_loss.push_back(*loss_val);
-    train_nts.push_back(it);
-    torch_wandb_log(name, "training_loss", it, *loss_val);
   }
   // Keep the labels in both halves of TAU_HYDRO (and TAU_STRAIN): the substeps swap the halves, and
   // without this a snapshot taken during training would contain the half that was never written
   if (lhydro) acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(duplicate_labels),1);
   
   if (ltrain_mag__mod__training){
-    std::vector<std::pair<AcReal*, int>> inputs;
-    std::vector<std::pair<AcReal*, int>> outputs;
 
     AcReal* out = nullptr;
     AcReal* input = nullptr;
     AcReal* output = nullptr;
+    
+    if (lconservative__mod__hydro) {
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
+        inputs.emplace_back(input, 3);
+    }
 
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
-    inputs.emplace_back(input, 3);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetbbmean_X(), &input, &out);
     inputs.emplace_back(input, 3);
 
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetF_SGS_EMF_X(), &output, &out);
     outputs.emplace_back(output, 3);
 
-    acGridHaloExchange();
-
-    int sub_dims[3] = {mz, my, mx};
-    torch_train_multiarg_CAPI(sub_dims, inputs, outputs, loss_val, name);
-    train_loss.push_back(*loss_val);
-    train_nts.push_back(it); 
-
-    torch_wandb_log(name, "training_loss", it, *loss_val);
   }
 
+  acGridHaloExchange();
+  int sub_dims[3] = {mz, my, mx};
+  torch_train_multiarg_CAPI(sub_dims, inputs, outputs, loss_val, name);
+  train_loss.push_back(*loss_val);
+  train_nts.push_back(it); 
+
+  torch_wandb_log(name, "training_loss", it, *loss_val);
 
   if (it == 500) {
     print_debug();

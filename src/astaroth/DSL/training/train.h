@@ -149,6 +149,14 @@ write_tensor_product(FieldSymmetricTensor T, real3 uu)
 	write(T.xz, uu.x*uu.z)
 }
 
+write_symmetricTensor_matrix(FieldSymmetricTensor T, AcMatrix Aij){
+  write(T.xx, Aij[0][0])
+  write(T.yy, Aij[1][1])
+  write(T.zz, Aij[2][2])
+  write(T.xy, Aij[0][1])
+  write(T.yz, Aij[1][2])
+  write(T.xz, Aij[0][2])
+}
 
 write_tensor_product_over_rho(FieldSymmetricTensor T, real3 uu, real rho)
 {
@@ -252,8 +260,7 @@ denormalize_field(Field F, acc_sum, acc_sum_squared, count)
     real num_acc = (real)count *AC_ngrid.x *AC_ngrid.y *AC_ngrid.z
     real mean =  acc_sum / num_acc
     real std_squared = (acc_sum_squared / num_acc) - (mean * mean)
-    real std = sqrt(std_squared) 
-    real std = max(std, 1e-8)
+    real std = max(sqrt(std_squared), 1e-8)
     return (F * std) + mean
 }
 
@@ -301,7 +308,7 @@ Kernel fluctutation_terms_and_means()
       if(!AC_ltrained__mod__training){
         if(lhydro) 
         {
-           if(AC_lconservative__mod__hydro)
+           if(lconservative__mod__hydro)
            {
              uij = gradient_tensor(MOM,F_RHO)
              Sij = traceless_strain(uij)
@@ -330,7 +337,7 @@ Kernel smooth_fluctuation_terms(){
       if(!AC_ltrained__mod__training){
         if(lhydro) 
         {
-            if(AC_lconservative__mod__hydro)
+            if(lconservative__mod__hydro)
             {
                 write(TAU_STRAIN, gsmooth(TAU_STRAIN))
                 write(TAU_HYDRO, gsmooth(TAU_HYDRO))
@@ -354,7 +361,7 @@ Kernel compute_taus(){
 	//Let us always follow the convention that the sgs term is:
 	//mean(f) - f(from means)
 	if(!AC_ltrained__mod__training){
-    if(AC_lconservative__mod__hydro)
+    if(lconservative__mod__hydro)
       {
           uij_mean = gradient_tensor(mom_mean, rho_mean)
           Sij_mean = traceless_strain(uij_mean)
@@ -396,7 +403,7 @@ Kernel smooth_bbmean() {
 
 Kernel get_averaged_fields(){
   if(lhydro) {
-    if(AC_lconservative__mod__hydro) {
+    if(lconservative__mod__hydro) {
       write(mom_mean, MOM)
       write(rho_mean, F_RHO)
     }
@@ -429,7 +436,7 @@ Kernel descale_inferred_values_kernel(int count)
 {
     if (lhydro)
     {
-        if (AC_lconservative__mod__hydro)
+        if (lconservative__mod__hydro)
         {
             write(TAU_STRAIN.xx, denormalize_field(TAU_STRAIN.xx, out_acc_sum_strain[0], out_acc_sum_sq_strain[0], count))
             write(TAU_STRAIN.yy, denormalize_field(TAU_STRAIN.yy, out_acc_sum_strain[1], out_acc_sum_sq_strain[1], count))
@@ -438,34 +445,34 @@ Kernel descale_inferred_values_kernel(int count)
             write(TAU_STRAIN.yz, denormalize_field(TAU_STRAIN.yz, out_acc_sum_strain[4], out_acc_sum_sq_strain[4], count))
             write(TAU_STRAIN.xz, denormalize_field(TAU_STRAIN.xz, out_acc_sum_strain[5], out_acc_sum_sq_strain[5], count))
     }
-    write(TAU_HYDRO.xx, denormalize_field(TAU_HYDRO.xx, out_acc_sum[0], out_acc_sum_sq[0], count))
-    write(TAU_HYDRO.yy, denormalize_field(TAU_HYDRO.yy, out_acc_sum[1], out_acc_sum_sq[1], count))
-    write(TAU_HYDRO.zz, denormalize_field(TAU_HYDRO.zz, out_acc_sum[2], out_acc_sum_sq[2], count))
-    write(TAU_HYDRO.xy, denormalize_field(TAU_HYDRO.xy, out_acc_sum[3], out_acc_sum_sq[3], count))
-    write(TAU_HYDRO.yz, denormalize_field(TAU_HYDRO.yz, out_acc_sum[4], out_acc_sum_sq[4], count))
-    write(TAU_HYDRO.xz, denormalize_field(TAU_HYDRO.xz, out_acc_sum[5], out_acc_sum_sq[5], count))
+    write(TAU_HYDRO.xx, denormalize_field(TAU_HYDRO.xx, out_acc_sum_tau[0], out_acc_sum_sq_tau[0], count))
+    write(TAU_HYDRO.yy, denormalize_field(TAU_HYDRO.yy, out_acc_sum_tau[1], out_acc_sum_sq_tau[1], count))
+    write(TAU_HYDRO.zz, denormalize_field(TAU_HYDRO.zz, out_acc_sum_tau[2], out_acc_sum_sq_tau[2], count))
+    write(TAU_HYDRO.xy, denormalize_field(TAU_HYDRO.xy, out_acc_sum_tau[3], out_acc_sum_sq_tau[3], count))
+    write(TAU_HYDRO.yz, denormalize_field(TAU_HYDRO.yz, out_acc_sum_tau[4], out_acc_sum_sq_tau[4], count))
+    write(TAU_HYDRO.xz, denormalize_field(TAU_HYDRO.xz, out_acc_sum_tau[5], out_acc_sum_sq_tau[5], count))
   }
 	if (AC_ltrain_mag__mod__training)
     {
-        descale_tensor_mag(F_SGS_EMFVEC.x, out_acc_sum_EMF[0], out_acc_sum_squared_EMF[0], count)
-        descale_tensor_mag(F_SGS_EMFVEC.y, out_acc_sum_EMF[1], out_acc_sum_squared_EMF[1], count)
-        descale_tensor_mag(F_SGS_EMFVEC.z, out_acc_sum_EMF[2], out_acc_sum_squared_EMF[2], count)
+        descale_tensor_mag(F_SGS_EMFVEC.x, out_acc_sum_emf[0], out_acc_sum_sq_emf[0], count)
+        descale_tensor_mag(F_SGS_EMFVEC.y, out_acc_sum_emf[1], out_acc_sum_sq_emf[1], count)
+        descale_tensor_mag(F_SGS_EMFVEC.z, out_acc_sum_emf[2], out_acc_sum_sq_emf[2], count)
   }
 }
 
 Kernel compute_normalize_sums() {
   if (lhydro) {
-        if (AC_lconservative__mod__hydro)
+        if (lconservative__mod__hydro)
         {
             reduce_sum_add(rho_mean, in_acc_sum_rho)
             reduce_sum_add(rho_mean * rho_mean, in_acc_sum_sq_rho)
-            reduce_sum_add(mom_mean.x, in_acc_sum[0])
-            reduce_sum_add(mom_mean.y, in_acc_sum[1])
-            reduce_sum_add(mom_mean.z, in_acc_sum[2])
+            reduce_sum_add(mom_mean.x, in_acc_sum_mom[0])
+            reduce_sum_add(mom_mean.y, in_acc_sum_mom[1])
+            reduce_sum_add(mom_mean.z, in_acc_sum_mom[2])
 
-            reduce_sum_add(mom_mean.x * mom_mean.x, in_acc_sum_sq[0])
-            reduce_sum_add(mom_mean.y * mom_mean.y, in_acc_sum_sq[1])
-            reduce_sum_add(mom_mean.z * mom_mean.z, in_acc_sum_sq[2])
+            reduce_sum_add(mom_mean.x * mom_mean.x, in_acc_sum_sq_mom[0])
+            reduce_sum_add(mom_mean.y * mom_mean.y, in_acc_sum_sq_mom[1])
+            reduce_sum_add(mom_mean.z * mom_mean.z, in_acc_sum_sq_mom[2])
 
             reduce_sum_add(TAU_STRAIN.xx, out_acc_sum_strain[0]) 
             reduce_sum_add(TAU_STRAIN.yy, out_acc_sum_strain[1])
@@ -485,57 +492,59 @@ Kernel compute_normalize_sums() {
         else 
         {
             // inputs
-            reduce_sum_add(uumean.x, in_acc_sum[0])
-            reduce_sum_add(uumean.y, in_acc_sum[1])
-            reduce_sum_add(uumean.z, in_acc_sum[2])
+            reduce_sum_add(uumean.x, in_acc_sum_uu[0])
+            reduce_sum_add(uumean.y, in_acc_sum_uu[1])
+            reduce_sum_add(uumean.z, in_acc_sum_uu[2])
 
-            reduce_sum_add(uumean.x * uumean.x, in_acc_sum_sq[0])
-            reduce_sum_add(uumean.y * uumean.y, in_acc_sum_sq[1])
-            reduce_sum_add(uumean.z * uumean.z, in_acc_sum_sq[2])
+            reduce_sum_add(uumean.x * uumean.x, in_acc_sum_sq_uu[0])
+            reduce_sum_add(uumean.y * uumean.y, in_acc_sum_sq_uu[1])
+            reduce_sum_add(uumean.z * uumean.z, in_acc_sum_sq_uu[2])
         }
 
-        reduce_sum_add(TAU_HYDRO.xx, out_acc_sum[0])
-        reduce_sum_add(TAU_HYDRO.yy, out_acc_sum[1])
-        reduce_sum_add(TAU_HYDRO.zz, out_acc_sum[2])
-        reduce_sum_add(TAU_HYDRO.xy, out_acc_sum[3]) 
-        reduce_sum_add(TAU_HYDRO.yz, out_acc_sum[4])
-        reduce_sum_add(TAU_HYDRO.xz, out_acc_sum[5])
+        reduce_sum_add(TAU_HYDRO.xx, out_acc_sum_tau[0])
+        reduce_sum_add(TAU_HYDRO.yy, out_acc_sum_tau[1])
+        reduce_sum_add(TAU_HYDRO.zz, out_acc_sum_tau[2])
+        reduce_sum_add(TAU_HYDRO.xy, out_acc_sum_tau[3]) 
+        reduce_sum_add(TAU_HYDRO.yz, out_acc_sum_tau[4])
+        reduce_sum_add(TAU_HYDRO.xz, out_acc_sum_tau[5])
 
-        reduce_sum_add(TAU_HYDRO.xx * TAU_HYDRO.xx, out_acc_sum_sq[0])
-        reduce_sum_add(TAU_HYDRO.yy * TAU_HYDRO.yy, out_acc_sum_sq[1])
-        reduce_sum_add(TAU_HYDRO.zz * TAU_HYDRO.zz, out_acc_sum_sq[2])
-        reduce_sum_add(TAU_HYDRO.xy * TAU_HYDRO.xy, out_acc_sum_sq[3])
-        reduce_sum_add(TAU_HYDRO.yz * TAU_HYDRO.yz, out_acc_sum_sq[4])
-        reduce_sum_add(TAU_HYDRO.xz * TAU_HYDRO.xz, out_acc_sum_sq[5])
+        reduce_sum_add(TAU_HYDRO.xx * TAU_HYDRO.xx, out_acc_sum_sq_tau[0])
+        reduce_sum_add(TAU_HYDRO.yy * TAU_HYDRO.yy, out_acc_sum_sq_tau[1])
+        reduce_sum_add(TAU_HYDRO.zz * TAU_HYDRO.zz, out_acc_sum_sq_tau[2])
+        reduce_sum_add(TAU_HYDRO.xy * TAU_HYDRO.xy, out_acc_sum_sq_tau[3])
+        reduce_sum_add(TAU_HYDRO.yz * TAU_HYDRO.yz, out_acc_sum_sq_tau[4])
+        reduce_sum_add(TAU_HYDRO.xz * TAU_HYDRO.xz, out_acc_sum_sq_tau[5])
     }
 	if (AC_ltrain_mag__mod__training)
     {
-        // Inputs
-	    reduce_sum_add(uumean.x,in_acc_sum_U[0])
-	    reduce_sum_add(uumean.y,in_acc_sum_U[1])
-	    reduce_sum_add(uumean.z,in_acc_sum_U[2])
+        if (lconservative__mod__hydro)
+        {
+	        reduce_sum_add(uumean.x,in_acc_sum_uu[0])
+	        reduce_sum_add(uumean.y,in_acc_sum_uu[1])
+	        reduce_sum_add(uumean.z,in_acc_sum_uu[2])
 
-	    reduce_sum_add(bbmean.x,in_acc_sum_B[0])
-	    reduce_sum_add(bbmean.y,in_acc_sum_B[1])
-	    reduce_sum_add(bbmean.z,in_acc_sum_B[2])
+	        reduce_sum_add(uumean.x*uumean.x,in_acc_sum_sq_uu[0])
+	        reduce_sum_add(uumean.y*uumean.y,in_acc_sum_sq_uu[1])
+	        reduce_sum_add(uumean.z*uumean.z,in_acc_sum_sq_uu[2])
+        }
+
+	    reduce_sum_add(bbmean.x,in_acc_sum_bb[0])
+	    reduce_sum_add(bbmean.y,in_acc_sum_bb[1])
+	    reduce_sum_add(bbmean.z,in_acc_sum_bb[2])
 
 
-	    reduce_sum_add(uumean.x*uumean.x,in_acc_sum_squared_U[0])
-	    reduce_sum_add(uumean.y*uumean.y,in_acc_sum_squared_U[1])
-	    reduce_sum_add(uumean.z*uumean.z,in_acc_sum_squared_U[2])
-
-	    reduce_sum_add(bbmean.x*bbmean.x,in_acc_sum_squared_B[0])
-	    reduce_sum_add(bbmean.y*bbmean.y,in_acc_sum_squared_B[1])
-	    reduce_sum_add(bbmean.z*bbmean.z,in_acc_sum_squared_B[2])
+	    reduce_sum_add(bbmean.x*bbmean.x,in_acc_sum_sq_bb[0])
+	    reduce_sum_add(bbmean.y*bbmean.y,in_acc_sum_sq_bb[1])
+	    reduce_sum_add(bbmean.z*bbmean.z,in_acc_sum_sq_bb[2])
           
 	    // Outputs 
-	    reduce_sum_add(F_SGS_EMFVEC.x,out_acc_sum_EMF[0])
-	    reduce_sum_add(F_SGS_EMFVEC.y,out_acc_sum_EMF[1])
-	    reduce_sum_add(F_SGS_EMFVEC.z,out_acc_sum_EMF[2])
+	    reduce_sum_add(F_SGS_EMFVEC.x,out_acc_sum_emf[0])
+	    reduce_sum_add(F_SGS_EMFVEC.y,out_acc_sum_emf[1])
+	    reduce_sum_add(F_SGS_EMFVEC.z,out_acc_sum_emf[2])
 
-	    reduce_sum_add(F_SGS_EMFVEC.x*F_SGS_EMFVEC.x,out_acc_sum_squared_EMF[0])
-	    reduce_sum_add(F_SGS_EMFVEC.y*F_SGS_EMFVEC.y,out_acc_sum_squared_EMF[1])
-	    reduce_sum_add(F_SGS_EMFVEC.z*F_SGS_EMFVEC.z,out_acc_sum_squared_EMF[2])
+	    reduce_sum_add(F_SGS_EMFVEC.x*F_SGS_EMFVEC.x,out_acc_sum_sq_emf[0])
+	    reduce_sum_add(F_SGS_EMFVEC.y*F_SGS_EMFVEC.y,out_acc_sum_sq_emf[1])
+	    reduce_sum_add(F_SGS_EMFVEC.z*F_SGS_EMFVEC.z,out_acc_sum_sq_emf[2])
 	}
 }
 
@@ -543,33 +552,36 @@ Kernel normalize_fields(int count)
 {
     if (lhydro)
     {
-        if (AC_lconservative__mod__hydro)
+        if (lconservative__mod__hydro)
         {
-            write_normalize(mom_mean, in_acc_sum, in_acc_sum_sq, count)
+            write_normalize(mom_mean, in_acc_sum_mom, in_acc_sum_sq_mom, count)
             write(rho_mean, normalize_field(rho_mean, in_acc_sum_rho, in_acc_sum_sq_rho, max(1, count)))
             write_normalize(TAU_STRAIN, out_acc_sum_strain, out_acc_sum_sq_strain, count)
     }
         else
         {
-            write_normalize(uumean, in_acc_sum, in_acc_sum_sq, count)
+            write_normalize(uumean, in_acc_sum_uu, in_acc_sum_sq_uu, count)
         }
-        write_normalize(TAU_HYDRO, out_acc_sum, out_acc_sum_sq, count)
+        write_normalize(TAU_HYDRO, out_acc_sum_tau, out_acc_sum_sq_tau, count)
 	}
 
 	if (AC_ltrain_mag__mod__training)
     {
-        write(uumean.x,normalize_field(uumean.x,in_acc_sum_U[0],in_acc_sum_squared_U[0],max(1,count)))
-        write(uumean.y,normalize_field(uumean.y,in_acc_sum_U[1],in_acc_sum_squared_U[1],max(1,count)))
-        write(uumean.z,normalize_field(uumean.z,in_acc_sum_U[2],in_acc_sum_squared_U[2],max(1,count)))
+        if (lconservative__mod__hydro)
+        {
+            write(uumean.x,normalize_field(uumean.x,in_acc_sum_uu[0],in_acc_sum_sq_uu[0],max(1,count)))
+            write(uumean.y,normalize_field(uumean.y,in_acc_sum_uu[1],in_acc_sum_sq_uu[1],max(1,count)))
+            write(uumean.z,normalize_field(uumean.z,in_acc_sum_uu[2],in_acc_sum_sq_uu[2],max(1,count)))
+        }
 
-        write(bbmean.x,normalize_field(bbmean.x,in_acc_sum_B[0],in_acc_sum_squared_B[0],max(1,count)))
-        write(bbmean.y,normalize_field(bbmean.y,in_acc_sum_B[1],in_acc_sum_squared_B[1],max(1,count)))
-        write(bbmean.z,normalize_field(bbmean.z,in_acc_sum_B[2],in_acc_sum_squared_B[2],max(1,count)))
+        write(bbmean.x,normalize_field(bbmean.x,in_acc_sum_bb[0],in_acc_sum_sq_bb[0],max(1,count)))
+        write(bbmean.y,normalize_field(bbmean.y,in_acc_sum_bb[1],in_acc_sum_sq_bb[1],max(1,count)))
+        write(bbmean.z,normalize_field(bbmean.z,in_acc_sum_bb[2],in_acc_sum_sq_bb[2],max(1,count)))
 
 
-        write(F_SGS_EMFVEC.x,normalize_field(F_SGS_EMFVEC.x,out_acc_sum_EMF[0],out_acc_sum_squared_EMF[0],max(1,count)))
-        write(F_SGS_EMFVEC.y,normalize_field(F_SGS_EMFVEC.y,out_acc_sum_EMF[1],out_acc_sum_squared_EMF[1],max(1,count)))
-        write(F_SGS_EMFVEC.z,normalize_field(F_SGS_EMFVEC.z,out_acc_sum_EMF[2],out_acc_sum_squared_EMF[2],max(1,count)))
+        write(F_SGS_EMFVEC.x,normalize_field(F_SGS_EMFVEC.x,out_acc_sum_emf[0],out_acc_sum_sq_emf[0],max(1,count)))
+        write(F_SGS_EMFVEC.y,normalize_field(F_SGS_EMFVEC.y,out_acc_sum_emf[1],out_acc_sum_sq_emf[1],max(1,count)))
+        write(F_SGS_EMFVEC.z,normalize_field(F_SGS_EMFVEC.z,out_acc_sum_emf[2],out_acc_sum_sq_emf[2],max(1,count)))
 	}
 }
 
@@ -623,7 +635,7 @@ Kernel duplicate_taus(){
 		write(TAU_HYDRO.xy, value(TAU_HYDRO.xy))
 		write(TAU_HYDRO.xz, value(TAU_HYDRO.xz))
 		write(TAU_HYDRO.yz, value(TAU_HYDRO.yz))
-		if(AC_lconservative__mod__hydro) {
+		if(lconservative__mod__hydro) {
 			write(TAU_STRAIN.xx, value(TAU_STRAIN.xx))
 			write(TAU_STRAIN.yy, value(TAU_STRAIN.yy))
 			write(TAU_STRAIN.zz, value(TAU_STRAIN.zz))
