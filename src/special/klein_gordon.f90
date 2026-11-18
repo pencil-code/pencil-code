@@ -3203,7 +3203,6 @@ module Special
     call copy_addr(cdt_mass,p_par(88))
     call copy_addr(lgr_kg_backreaction,p_par(89)) ! bool
 
-    call copy_addr(cdt_mass,p_par(88))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
