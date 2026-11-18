@@ -538,7 +538,7 @@ module Diagnostics
       character (len=*), optional,intent(OUT) :: legend
 !
       character, parameter:: comma=','
-      character(len=256)  :: tform
+      character(len=2048) :: tform
       logical             :: lcompl
       character(len=32)   :: cform_loc,cform_ext
       integer             :: iname,lenrank,lenloc,iname_loc
