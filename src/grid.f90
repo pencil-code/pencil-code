@@ -2052,8 +2052,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !***********************************************************************
     subroutine grid_profile_1D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta,param2)
 !
-!  Specify the functional form of the grid profile function g
-!  and calculate g,g',g''.
+!     Specify the functional form of the grid profile function g and calculate
+!     g,g',g''. Note that this is called psi in the manual.
 !
 !  25-jun-04/tobi+wolf: coded
 !   9-mar-17/MR: blocked used of unpresent optionals
