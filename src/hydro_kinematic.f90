@@ -2934,19 +2934,19 @@ module Hydro
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
-    subroutine hydro_save_diagnostic_controls
-            qvec_gb_save = qvec_gb
-            avec_gb_save = avec_gb
-            phase1_save  = phase1
-            phase2_save  = phase2
-    endsubroutine hydro_save_diagnostic_controls
+    subroutine hydro_drop_diagnostic_controls
+      qvec_gb_save = qvec_gb
+      avec_gb_save = avec_gb
+      phase1_save  = phase1
+      phase2_save  = phase2
+    endsubroutine hydro_drop_diagnostic_controls
 !***********************************************************************
-    subroutine hydro_restore_diagnostic_controls
-            qvec_gb = qvec_gb_save
-            avec_gb = avec_gb_save
-            phase1  = phase1_save
-            phase2  = phase2_save
-    endsubroutine hydro_restore_diagnostic_controls
+    subroutine hydro_fetch_diagnostic_controls
+      qvec_gb = qvec_gb_save
+      avec_gb = avec_gb_save
+      phase1  = phase1_save
+      phase2  = phase2_save
+    endsubroutine hydro_fetch_diagnostic_controls
 !***********************************************************************
     subroutine duu_dt(f,df,p)
 !

@@ -10207,11 +10207,11 @@ module Hydro
 !
     endsubroutine calc_gradu
 !***********************************************************************
-    subroutine hydro_save_diagnostic_controls
-    endsubroutine hydro_save_diagnostic_controls
+    subroutine hydro_drop_diagnostic_controls
+    endsubroutine hydro_drop_diagnostic_controls
 !***********************************************************************
-    subroutine hydro_restore_diagnostic_controls
-    endsubroutine hydro_restore_diagnostic_controls
+    subroutine hydro_fetch_diagnostic_controls
+    endsubroutine hydro_fetch_diagnostic_controls
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

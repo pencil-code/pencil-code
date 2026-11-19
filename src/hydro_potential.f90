@@ -3861,6 +3861,12 @@ module Hydro
     subroutine load_variables_to_gpu_hydro
     endsubroutine load_variables_to_gpu_hydro
 !***********************************************************************
+    subroutine hydro_drop_diagnostic_controls
+    endsubroutine hydro_drop_diagnostic_controls
+!***********************************************************************
+    subroutine hydro_fetch_diagnostic_controls
+    endsubroutine hydro_fetch_diagnostic_controls
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr

@@ -55,7 +55,7 @@ module Equ
       use Chiral
       use Chemistry
       use Density
-      use Diagnostics, only: save_diagnostic_controls
+      use Diagnostics, only: drop_diagnostic_controls
       use Driver, only: driver_apply
       use Energy
       use EquationOfState
@@ -84,7 +84,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: training_save_diagnostic_controls
+      use Training, only: training_drop_diagnostic_controls
       use Grid, only: coarsegrid_interp
 !$    use OMP_lib
       use Mpicomm
@@ -324,9 +324,9 @@ module Equ
         call rhs_gpu(itsub)
 !  Should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
 !$      if (ldiagnostic_output) then 
-!$        call save_diagnostic_controls
-!$        call hydro_save_diagnostic_controls
-!$        call training_save_diagnostic_controls
+!$        call drop_diagnostic_controls
+!$        call hydro_drop_diagnostic_controls
+!$        call training_drop_diagnostic_controls
 !$      endif 
         end_time = real(mpiwtime())
         rhs_sum_time = rhs_sum_time + end_time-start_time
@@ -466,12 +466,13 @@ module Equ
       if (lgpu .and. (ldustvelocity .or. ldustdensity) .and. (itsub <= 2)) &
         call update_on_gpu(dt_beta_ts_index,'AC_dt_beta_ts__mod__cdata')
 
-    endsubroutine
+    endsubroutine load_variables_to_gpu
 !***********************************************************************
    subroutine write_diagnostics_before_timestep(f)
 !
 !   Writes out diagnostics that depend only on the f-array. Diagnostics written
 !   here must not access any pencils or auxiliary variables.
+!   Only relevant for slices at the moment.
 !
 !   08-Oct-2026/Kishore: carved out from write_diagnostics
 !   26-Oct-2026/Kishore: update ghosts for slices
@@ -652,8 +653,8 @@ module Equ
 !
       use Magnetic,only: calc_diagnostic_auxiliaries_magnetic
       use Diagnostics
-      use Hydro, only: hydro_restore_diagnostic_controls
-      use Training, only: training_restore_diagnostic_controls
+      use Hydro, only: hydro_fetch_diagnostic_controls
+      use Training, only: training_fetch_diagnostic_controls
 !$    use OMP_lib
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
@@ -666,9 +667,9 @@ module Equ
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,lpencil,fname,fnamex,fnamey,fnamez,fnamer,&
 !$omp&       fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
-!$    call restore_diagnostic_controls
-!$    call hydro_restore_diagnostic_controls
-!$    call training_restore_diagnostic_controls
+!$    call fetch_diagnostic_controls
+!$    call hydro_fetch_diagnostic_controls
+!$    call training_fetch_diagnostic_controls
 !
       !$omp do
       do imn=1,nyz
@@ -712,7 +713,7 @@ module Equ
       use Forcing, only: calc_diagnostics_forcing
       use Gravity, only: calc_diagnostics_gravity
       use Heatflux, only: calc_diagnostics_heatflux
-      use Hydro, only: calc_diagnostics_hydro, hydro_restore_diagnostic_controls
+      use Hydro, only: calc_diagnostics_hydro, hydro_fetch_diagnostic_controls
       use Interstellar, only: calc_diagnostics_interstellar
       use Lorenz_gauge, only: calc_diagnostics_lorenz_gauge
       use Magnetic, only: calc_diagnostics_magnetic
@@ -726,7 +727,7 @@ module Equ
       use Selfgravity, only: calc_diagnostics_selfgrav
       use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
-      use Training, only: calc_diagnostics_training, training_restore_diagnostic_controls
+      use Training, only: calc_diagnostics_training, training_fetch_diagnostic_controls
       use Viscosity, only: calc_diagnostics_viscosity
       use Special, only: calc_diagnostics_special
       use Diagnostics
@@ -748,9 +749,9 @@ module Equ
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm, &
 !$omp fname_half)
-!$    call restore_diagnostic_controls
-!$    call hydro_restore_diagnostic_controls
-!$    call training_restore_diagnostic_controls
+!$    call fetch_diagnostic_controls
+!$    call hydro_fetch_diagnostic_controls
+!$    call training_fetch_diagnostic_controls
 !      
 !     TP: on some nvfortan compilers copyin does not seem to be enough to ensure diagnostic arrays are allocated
 !         not sure was the copyin ever sufficient, but not that important since we can always explicitly check
@@ -763,7 +764,6 @@ module Equ
 !  Each thread has its own pencil case on the heap, since on large grids
 !  it does not fit on the thread stacks.
 !
-
       !$omp do
       do imn=1,nyz
         !Done since with multithreading RHS is not evaluated
