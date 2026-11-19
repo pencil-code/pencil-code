@@ -1710,7 +1710,7 @@ module Special
             ! 2/r d/dr, which vanishes at r=0
             del2phi = del2phi + 2.*tmp*x(l1:l2)/(x(l1:l2)**2+tini)
           else
-            call del2_lapse(f,p,iphi,del2phi)
+            call div_grad(f,p,iphi,del2phi)
           endif
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
           if (ip < 13) then
@@ -1727,7 +1727,7 @@ module Special
           df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) - &
                 fric*p%dpsi-lapse*pref_Vprime*p%Vprimepsi
           if (c_psi/=0 .and. .not. lpsi_hom) then
-            call del2_lapse(f,p,ipsi,del2psi)
+            call div_grad(f,p,ipsi,del2psi)
             df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) + c_psi**2*pref_del2*del2psi
           endif
         endif
@@ -2787,11 +2787,12 @@ module Special
 !
     endsubroutine special_after_timestep
 !***********************************************************************
-    subroutine del2_lapse(f,p,k,del2f)
+    subroutine div_grad(f,p,k,del2f)
 !
-! Computes D^i(lapse*D^i*f).
-! In FLRW the final term on rhs is proportional to del2:
-! Divided by a^2 in cosmic time and exactly equal with conformal time.
+! Computes ∇_a(D^af).
+! In FLRW the this is proportional to del2/a^2, but with conformal
+! time we rescale the equations to get rid of the a^-2.
+! With full GR it becomes D_i(lapse*D^if)
 !
 !  16-nov-26/TP: coded
 !
@@ -2815,7 +2816,7 @@ module Special
         del2f=p%gr_alp*del2f+tmp
       endif
 !
-    endsubroutine del2_lapse
+    endsubroutine div_grad 
 !***********************************************************************
     subroutine get_Vpotential(f,Vpotential)
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
