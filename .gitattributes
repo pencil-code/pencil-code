@@ -5262,6 +5262,7 @@ src/driver.h -text
 src/nodriver.f90 -text
 src/special/jet_precursor.f90 -text
 src/special/spray_table.f90 -text
+utils/cronjobs/run-GPU-test.sh -text
 utils/philippe/LCT/flow_reb_cube.pro -text
 utils/philippe/LCT/velocity_field_lct.pro -text
 utils/philippe/driver/KFU-logo.png -text
