@@ -1,0 +1,37 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&init_pars
+  Lxyz = 6, 1, 12
+  xyz0 = 0, -0.5, -2
+  
+  grid_func(1) = 'cyl_offset'
+  coord_system='cylindrical'
+  
+  lperi = F, T, F
+  bcz = 's','s','a','1s','cT1'
+  bcx = 'af','af','sf','sf','sf'
+  
+  lwrite_2d=T
+/
+&eos_init_pars
+  cs0 = 10
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='polytropic'
+/
+&grav_init_pars
+  gravz_profile='const'
+  zref=0
+  gravz=1
+/
+&entropy_init_pars
+  initss='polytropic'
+  mpoly0=1.5
+/
+&initial_condition_pars
+  blob_type(1) = 'cos^2'
+  ampl_ss(1) = -0.2
+  radius_ss(1) = 1
+/
