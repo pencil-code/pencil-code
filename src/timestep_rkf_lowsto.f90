@@ -186,7 +186,7 @@ module Timestep
         do j=1,mvar
           farraymin(j) = max(dt_ratio*maxval(abs(f(l1:l2,m1:m2,n1:n2,j))),dt_epsi)
         enddo
-        if (lroot.and.it==1) print*,"farraymin",farraymin
+        if (lroot.and.it==1) print*,"farraymin",farraymin(1:mvar)
       endif
 !
 !  Initialize error to zero
