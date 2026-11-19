@@ -2016,7 +2016,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
          divergence(:,2) = divergence(:,2) &
                  + 2*rcyl_mn1*(f12)
          divergence(:,3) = divergence(:,2) &
-                 + 1*rcyl_mn1*f13
+                 + rcyl_mn1*f13
       endif
 
     endsubroutine div_tensor
