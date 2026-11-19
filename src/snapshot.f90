@@ -22,13 +22,14 @@ module Snapshot
     character(LEN=intlen) :: csnap_nr
   endtype
 !
-! For downsampled snapshots in GPU runs (assume at most one will be written per
-! timestep)
+! For downsampled snapshots in GPU runs (assume at most one will be written per timestep)
+!
   type(pars_for_external) :: extpars
 !
 ! For normal snapshots in GPU runs; in principle, we may need to write both
 ! VAR* and var.dat in a particular timestep, so we need to store information
 ! about both till the helper thread wakes up
+!
   type :: queued_snapshot_info
     integer :: len = 0 !how many snapshots are currently queued
     type(pars_for_external), dimension(2) :: snap
@@ -80,7 +81,7 @@ module Snapshot
 !
       use General, only: safe_character_assign
       use Sub, only: read_snaptime, update_snaptime
-      use Diagnostics, only: save_diagnostic_controls
+      use Diagnostics, only: drop_diagnostic_controls
 !
       real, dimension (:,:,:,:) :: a
 !
@@ -106,7 +107,7 @@ module Snapshot
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
           extpars%csnap_nr=ch
-          call save_diagnostic_controls(lsnap_time=.true.)
+          call drop_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
           call perform_wsnap_down(a,ch)
@@ -318,7 +319,7 @@ module Snapshot
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
       use Chemistry, only: make_flame_index, make_mixture_fraction
-      use Diagnostics, only: save_diagnostic_controls
+      use Diagnostics, only: drop_diagnostic_controls
       use General, only: itoa
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
@@ -394,7 +395,7 @@ module Snapshot
           call safe_character_assign(file,trim(chsnap)//ch)
           if (lmultithread) then
             call add_snap_to_queue(nv1_capitalvar, msnap, file)
-            call save_diagnostic_controls(lsnap_time=.true.)
+            call drop_diagnostic_controls(lsnap_time=.true.)
 !$          lmasterflags(PERF_WSNAP) = .true.
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
@@ -439,7 +440,7 @@ module Snapshot
         endif
         if (lmultithread.and.nt>0) then
           call add_snap_to_queue(1, msnap, file)
-          call save_diagnostic_controls(lsnap_time=.true.)
+          call drop_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_WSNAP) = .true.
         else
           call perform_wsnap(a,1,msnap,file)
@@ -948,7 +949,7 @@ module Snapshot
       use Boundcond, only: update_ghosts
       use Power_spectrum, only: powerhel
       use Sub, only: update_snaptime
-      use Diagnostics, only: save_diagnostic_controls
+      use Diagnostics, only: drop_diagnostic_controls
       use General, only: loptest
 !
       real, contiguous, dimension(:,:,:,:) :: f
@@ -987,7 +988,7 @@ module Snapshot
 !
           tspec_save=t
           if (lgpu) tspec_save=t_farray_copy
-          call save_diagnostic_controls(lsnap_time=.true.)
+          call drop_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)
