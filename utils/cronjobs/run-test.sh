@@ -15,7 +15,7 @@ TEST="auto-test"
 LAST="previous"
 LOGFILE="index.html"
 HOME_DIR="/home/pencil"
-TARGET_DIR="/var/www/pencil-code/tests"
+TARGET_DIR="/var/www/auto-test/tests"
 UPDATE_DIR="/home/pencil/UPDATE"
 SVN_CHECKOUT="https://pencil-code.org/svn/trunk/"
 
@@ -67,7 +67,7 @@ else
 		exit 1
 	fi
 	cd "${TEST_DIR}"
-	updated=`svn cleanup && svn up | grep -E '^(Restored |Updated to revision [0-9]+\.|Wieder hergestellt |Aktualisiert zu Revision [0-9]+\.)'`
+	updated=`svn cleanup && svn up --force --accept=tf | grep -E '^(Restored |Updated to revision [0-9]+\.|Wieder hergestellt |Aktualisiert zu Revision [0-9]+\.)'`
 fi
 
 # prepare test command
