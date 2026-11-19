@@ -457,6 +457,31 @@ module Grid
           xprim2 =     Lx*(g1der2*a**2)/(g1up-g1lo)
           g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
 !
+        case ('cyl_offset')
+!         Grid for use along the radial direction in cylindrical coordinates,
+!         such that the first grid point lies at r=dr/2 rather than at r=0.
+!         For the boundary conditions, replace 'a' and 's' by 'af' and 'sf'\
+!         respectively.
+          if (xyz0(1) /= 0) call fatal_error('construct_grid', &
+            'cyl_offset is meant to be used with xyz0(1) = 0')
+          if (.not.lcylindrical_coords) call fatal_error('construct_grid', &
+            'cyl_offset is meant to be used with cylindrical coordinates')
+!
+          dx = Lxyz(1)/(nxgrid-1./2)
+          x00 = dx/2
+          b = dx*(nxgrid-1)
+          a=dx
+          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+b,xyz_star(1),'linear')/a
+          call grid_profile(a*(xi1  -xi1star),  'linear',g1,g1der1,g1der2)
+          call grid_profile(a*(xi1lo-xi1star),  'linear',g1lo)
+          call grid_profile(a*(xi1up-xi1star),  'linear',g1up)
+          call grid_profile(a*(xi1proc-xi1star),'linear',g1proc)
+!
+          x      = x00 + b*(g1  -  g1lo)/(g1up-g1lo)
+          xprim  =       b*(g1der1*a   )/(g1up-g1lo)
+          xprim2 =       b*(g1der2*a**2)/(g1up-g1lo)
+          g1proc = x00 + b*(g1proc-g1lo)/(g1up-g1lo)
+!
         case default
           call fatal_error('construct_grid', &
                            'No such x grid function: '//trim(grid_func(1)))
