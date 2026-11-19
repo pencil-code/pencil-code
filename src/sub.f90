@@ -9147,7 +9147,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       sij(:,3,3)=sij(:,3,3)+r1_mn*uu(:,1)+cotth(m)*r1_mn*uu(:,2)
     elseif (lcylindrical_coords) then
       sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1*uu(:,2)
-      sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1*uu(:,1)
+      sij(:,2,2)=sij(:,2,2)+rcyl_mn1*uu(:,1)
       sij(:,2,1)=sij(:,1,2)
     endif
 !
