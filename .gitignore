@@ -32,6 +32,7 @@ samples/**/*.log
 samples/**/Makefile
 samples/**/.pc_build_history
 samples/**/COMPLETED
+samples/**/ENDTIME
 samples/**/ERROR
 samples/**/FIRST_FAILED
 samples/**/KEEP_RELOADING
@@ -44,6 +45,7 @@ samples/**/fort.*
 samples/**/data
 #
 # exceptions for individual samples
+# Kishore: it would be much cleaner to have these in gitignore files that live in the corresponding samples.
 samples/corona/driver
 !samples/backwards-compatible/data/param.nml
 !samples/backwards-compatible/data/proc0/var.dat
