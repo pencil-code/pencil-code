@@ -60,7 +60,7 @@ subroutine helper_loop(f)
 !
   use Boundcond, only: update_ghosts
   use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries
-  use Diagnostics, only:  restore_diagnostic_controls,allocate_fnames
+  use Diagnostics, only:  fetch_diagnostic_controls,allocate_fnames
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
   use Power_spectrum, only: wsnap_UETCs
@@ -82,7 +82,7 @@ subroutine helper_loop(f)
 !$    call signal_wait(lhelper_perf,lhelper_run)
       call check_for_nans_globally(f,'after reading from the GPU')
       start_time = real(mpiwtime())
-!$    if (lhelper_run) call restore_diagnostic_controls
+!$    if (lhelper_run) call fetch_diagnostic_controls
 
 !$    if (lhelper_run) call update_ghosts(f)
 !$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then
@@ -97,7 +97,7 @@ subroutine helper_loop(f)
 !$    endif
 !Done before restoring to snap time to avoid overwriting it.
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) call calc_all_module_diagnostic_auxiliaries(f,p)
-!$    if (lhelper_run) call restore_diagnostic_controls(lsnap_time=.true.)
+!$    if (lhelper_run) call fetch_diagnostic_controls(lsnap_time=.true.)
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
         if (ip<=12.and.lroot) tvar1=real(mpiwtime())
         call perform_wsnap_ext(f)
@@ -239,7 +239,7 @@ endsubroutine helper_loop
 !  01-Apr-25/Madeline: coded (originally inlined in run.f90)
 !
     use Boundcond, only: update_ghosts
-    use Diagnostics, only: save_diagnostic_controls
+    use Diagnostics, only: drop_diagnostic_controls
     use GPU, only: copy_farray_from_GPU
     use Messages, only: fatal_error
     use Power_spectrum, only: wsnap_UETCs
@@ -279,7 +279,7 @@ endsubroutine helper_loop
 !
         tuetc_data=t
         if (lgpu) tuetc_data=t_farray_copy
-        call save_diagnostic_controls(lsnap_time=.true.)
+        call drop_diagnostic_controls(lsnap_time=.true.)
 !$      lmasterflags(PERF_UETCSNAP) = .true.
       else
         if (iaa>0) call update_ghosts(f,iaa,iaa+2)

@@ -677,7 +677,7 @@ module Particles_stalker
 !  With GPUs: if stalker data are due, copies f and fp from the GPU and asks
 !  the helper thread to write them. Called by the master thread.
 !
-      use Diagnostics, only: save_diagnostic_controls
+      use Diagnostics, only: drop_diagnostic_controls
       use Gpu, only: copy_farray_from_GPU
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -686,7 +686,7 @@ module Particles_stalker
 !
       if (t<tstalk) return
       call copy_farray_from_GPU(f)
-      call save_diagnostic_controls
+      call drop_diagnostic_controls
       tstalk_save=tstalk
 !$    lmasterflags(PERF_STALKER)=.true.
       do while (tstalk<=t)
