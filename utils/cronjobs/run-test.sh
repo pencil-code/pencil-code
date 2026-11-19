@@ -37,7 +37,7 @@ TEST_DIR="${HOME_DIR}/${TEST}"
 
 # check for other processes
 if [[ -n `ps aux | grep -vE '[0-9]:[0-9][0-9] grep ' | grep -E "pencil-test .*--pencil-home=${TEST_DIR}"` ]] ; then
-	echo "The same PC autotest is running: ${TEST_DIR}"
+	#echo "The same PC autotest is running: ${TEST_DIR}"
 	exit 1
 fi
 
