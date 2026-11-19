@@ -346,7 +346,7 @@ module File_io
       interface
         subroutine reader(iomsg)
           use Cparam, only: n_special_modules, iomsglen
-          character(LEN=*), intent(out) :: iomsg
+          character(LEN=iomsglen), intent(out) :: iomsg
         endsubroutine reader
       endinterface
 !
