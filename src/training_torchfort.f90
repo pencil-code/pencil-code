@@ -671,17 +671,17 @@
 !
 !    endsubroutine write_sample
 !!***************************************************************
-    subroutine training_save_diagnostic_controls
+    subroutine training_drop_diagnostic_controls
 
       train_loss_save = train_loss
 
-    endsubroutine training_save_diagnostic_controls
+    endsubroutine training_drop_diagnostic_controls
 !***********************************************************************
-    subroutine training_restore_diagnostic_controls
+    subroutine training_fetch_diagnostic_controls
 
       train_loss = train_loss_save
 
-    endsubroutine training_restore_diagnostic_controls
+    endsubroutine training_fetch_diagnostic_controls
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
