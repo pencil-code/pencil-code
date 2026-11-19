@@ -336,7 +336,8 @@ module Diagnostics
       real, dimension(5*nname) :: buffer
       integer, parameter :: lun=1
       logical, save :: lfirst_call = .true.
-      integer :: itype, iname_loc, inamel
+      integer :: itype, iname_loc, inamel, iostat
+      character(LEN=iomsglen) :: iomsg
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after time_step, so the best
@@ -431,8 +432,12 @@ module Diagnostics
 !
 !  Put output line into a string.
 !
-        write(line,trim(fform)) buffer(1:nnamel)
-        call clean_line(line)
+        write(line,trim(fform),iostat=iostat,iomsg=iomsg) buffer(1:nnamel)
+        if (iostat==0) then
+          call clean_line(line)
+        else
+          call warning("prints","Formatting error: "//trim(iomsg))
+        endif
 !
 !  Append to diagnostics file.
 !
