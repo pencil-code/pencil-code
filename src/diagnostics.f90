@@ -61,8 +61,8 @@ module Diagnostics
   public :: allocate_diagnostic_names
   public :: allocate_diagnostic_arrays
   public :: calc_nnames
-  public :: save_diagnostic_controls
-  public :: restore_diagnostic_controls
+  public :: drop_diagnostic_controls
+  public :: fetch_diagnostic_controls
 !
   interface max_name
     module procedure max_name_int
@@ -4292,7 +4292,7 @@ contains
 
     endsubroutine allocate_diagnostic_arrays
 !***********************************************************************
-   subroutine save_diagnostic_controls(lsnap_time)
+   subroutine drop_diagnostic_controls(lsnap_time)
 
      logical, optional :: lsnap_time
 !
@@ -4338,9 +4338,9 @@ contains
     Hp_target_save = Hp_target
     appa_target_save = appa_target
 
-    endsubroutine save_diagnostic_controls
+    endsubroutine drop_diagnostic_controls
 !***********************************************************************
-    subroutine restore_diagnostic_controls(lsnap_time)
+    subroutine fetch_diagnostic_controls(lsnap_time)
 
      logical, optional :: lsnap_time
 !
@@ -4385,6 +4385,6 @@ contains
     tspec = real(tspec_save)
     lpencil = lpencil_save
 
-    endsubroutine restore_diagnostic_controls
+    endsubroutine fetch_diagnostic_controls
 !***********************************************************************
 endmodule Diagnostics
