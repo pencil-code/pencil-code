@@ -435,7 +435,7 @@ module Grid
             enddo
           endif
 !
-       case ('band','sus')
+        case ('band','sus')
           a = 1.0
           if (lsymmgrid(1)) then
             xi1star=idiv(nxgrid,2)
@@ -456,8 +456,8 @@ module Grid
           xprim  =     Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2 =     Lx*(g1der2*a**2)/(g1up-g1lo)
           g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
-          
-       case default
+!
+        case default
           call fatal_error('construct_grid', &
                            'No such x grid function: '//trim(grid_func(1)))
         endselect
