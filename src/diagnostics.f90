@@ -539,7 +539,7 @@ module Diagnostics
       character(len=2048) :: tform
       logical             :: lcompl
       character(len=len(cform)) :: cform_loc,cform_ext
-      integer             :: iname,lenrank,lenloc,iname_loc
+      integer             :: iname,lenrank,lenloc,iname_loc,indloc
       character(len=4), dimension(4) :: addtexts
       integer, dimension(4) :: addlengths
 !
@@ -568,10 +568,18 @@ module Diagnostics
               cform_loc = cform(iname_loc)
               if (iname==iname_loc) then
                 cform_ext = 'g11.2'      ! only location was requested, so give extrema a flexible format
+!
+! Only the location of maxima was asked for: get rid of the 'loc' postfix.
+!
+                indloc=index(cname(iname),'(')
+                if (indloc==0) indloc=len_trim(cname(iname))+1
+                if (indloc>3) then
+                  if (cname(iname)(indloc-3:indloc-1)=='loc') &
+                    cname(iname)=cname(iname)(1:indloc-4)//cname(iname)(indloc:)
+                endif
               else
-                cform_ext = cform(iname)
+                cform_ext = adjust_format(iname)
               endif
-              cform_ext = adjust_format(iname)
 
               lenrank=floor(alog10(real(ncpus)))+1     !  number of digits for rank from ncpus
               lenloc = len_fmtd_expr(trim(cform_loc))  !  length of time-series entry acc. to cform_loc
@@ -880,8 +888,9 @@ contains
 !
       real, dimension (nlname) :: fmax, fsum, fweight_tmp
       real :: vol
-      integer :: iname, imax_count, isum_count, itype
+      integer :: iname, imax_count, isum_count, itype, iloc
       logical :: lweight_comm,lalways,llocations
+      logical, dimension (nlname) :: lmax_with_loc
       integer, parameter :: lun=1
       character (len=fnlen) :: datadir='data',path=''
       character (len=fnlen) :: fform='(1p30e12.4)'
@@ -909,7 +918,8 @@ contains
           if (itype<0) then                        ! max/min
             imax_count=imax_count+1
             fmax(imax_count)=vname(iname)
-            if (itype/ilabel_extr_lim>0) llocations=.true.   ! true if there is at least one "locations" diagnostic
+            lmax_with_loc(imax_count)=itype/ilabel_extr_lim>0
+            if (lmax_with_loc(imax_count)) llocations=.true.   ! true if there is at least one "locations" diagnostic
           elseif (itype>0) then
             itype = mod(itype,ilabel_complex)
             isum_count=isum_count+1
@@ -942,8 +952,22 @@ contains
 !
       if (imax_count>0) then
         if (llocations) then
+          if (allocated(maxranks)) then
+            if (size(maxranks)<imax_count) deallocate(maxranks)
+          endif
           if (.not.allocated(maxranks)) allocate(maxranks(imax_count))
           call mpireduce_max(fmax,maxranks,imax_count)   ! Get the maximum values and the ranks where they occur.
+!
+!  maxranks has one entry per extremum, but fetch_to_process_masked counts ranks over the
+!  slots with location request only: drop the ranks of extrema without location.
+!
+          iloc=0
+          do iname=1,imax_count
+            if (lmax_with_loc(iname)) then
+              iloc=iloc+1
+              maxranks(iloc)=maxranks(iname)
+            endif
+          enddo
 !
 !  Fetch the encoded maximum locations from the ranks where they occur into fname_keep for the slots,
 !  for which locations are requested (mask is (itype_name(1:nlname)/ilabel_extr_lim)>0)
@@ -2029,7 +2053,7 @@ contains
       real :: newmax
       logical :: lchanged
       integer, dimension(1) :: max_loc
-      integer :: iname_loc_,indloc
+      integer :: iname_loc_,itype
 !
       if (iname==0) return
 !
@@ -2063,30 +2087,27 @@ contains
 !
       if (lfirstpoint) then
         if (loptest(lsqrt)) then
-          itype_name(iname)=ilabel_max_sqrt
+          itype=ilabel_max_sqrt
         elseif (loptest(l_dt)) then
-          itype_name(iname)=ilabel_max_dt
+          itype=ilabel_max_dt
         elseif (loptest(lneg)) then
-          itype_name(iname)=ilabel_max_neg
+          itype=ilabel_max_neg
         elseif (loptest(lreciprocal)) then
-          itype_name(iname)=ilabel_max_reciprocal
+          itype=ilabel_max_reciprocal
         else
-          itype_name(iname)=ilabel_max
+          itype=ilabel_max
         endif
 !
-!  Encode the index for the location diagnostic in the type
+!  Encode the index for the location diagnostic in the type.
+!  Done only with the final value to avoid race conditions
 !
+        itype_name(iname) = itype + ilabel_extr_lim*iname_loc_
         if (iname_loc_/=0) then
-          itype_name(iname) = itype_name(iname) + ilabel_extr_lim*iname_loc_
-          if (iname_loc_/=iname) then
 !
 !  If there is a separate extremum slot in fname, the location slot is ignored when finalizing the diagnostic.
+!  (If only the location was asked for, the name is adjusted in gen_form_legend.)
 !
-            itype_name(iname_loc_)=ilabel_ignore
-          else       ! if only location was asked for, change the diagnostic name by removing pending "loc".
-            indloc=index(cname(iname),'loc')
-            if (indloc>0) cname(iname)=cname(iname)(1:indloc-1)//cname(iname)(indloc+3:)
-          endif
+          if (iname_loc_/=iname) itype_name(iname_loc_)=ilabel_ignore
         endif
       endif
 !
@@ -4108,6 +4129,7 @@ contains
       integer :: nmax, nsum
       logical :: firstcall_from_pencil_check=.false.
       integer, dimension(2) :: max_range, sum_range
+      integer, dimension(size(itype_name)) :: itype_base
 
       max_range(1) = -5
       max_range(2) = -1
@@ -4125,11 +4147,16 @@ contains
       endif
 
       if (.not.linds_diags_unset) return
+!
+!  Extrema with location request have the location index encoded in itype_name: use the base label.
+!
+      itype_base = itype_name
+      where (itype_base<0) itype_base = mod(itype_base,ilabel_extr_lim)
 
-      nmax = allpos_in_array_int(max_range,itype_name)
+      nmax = allpos_in_array_int(max_range,itype_base)
       if (nmax>0) then
         allocate(inds_max_diags(nmax))
-        nmax = allpos_in_array_int(max_range,itype_name,inds_max_diags)
+        nmax = allpos_in_array_int(max_range,itype_base,inds_max_diags)
       endif
       nsum = allpos_in_array_int(sum_range,itype_name)
       if (nsum>0) then
