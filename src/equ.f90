@@ -33,11 +33,6 @@ module Equ
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
 !
-! TP: variables for communication between threads
-!
-  real ::  dt_save,eps_rkf_save
-  integer :: it_save
-!
   contains
 !***********************************************************************
     include 'pencil_init.inc' ! defines subroutine initialize_pencils
