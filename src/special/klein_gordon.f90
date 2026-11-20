@@ -1133,11 +1133,13 @@ module Special
         lpenc_requested(i_plasma_friction)=.true.
       endif
 
-      if (idiag_wall_vel /= 0 .or. idiag_tension /= 0) then
+      if (idiag_wall_vel /= 0 .or. idiag_tension /= 0 .or. lgr_metric) then
         lpenc_requested(i_gphi) = .true.
       endif
+
       if (lbubble_size_ode .and. nx > 1) lpenc_requested(i_gphi) = .true.
 
+      if(lgr_metric) lpenc_requested(i_gpsi) =.true.
 !
       if (ldensity.and.lperturbative_reheating) then ! Sovan
         lpenc_requested(i_rho)=.true.
@@ -1710,7 +1712,7 @@ module Special
             ! 2/r d/dr, which vanishes at r=0
             del2phi = del2phi + 2.*tmp*x(l1:l2)/(x(l1:l2)**2+tini)
           else
-            call div_grad(f,p,iphi,del2phi)
+            call div_grad(f,p,iphi,p%gphi,del2phi)
           endif
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
           if (ip < 13) then
@@ -1727,7 +1729,7 @@ module Special
           df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) - &
                 fric*p%dpsi-lapse*pref_Vprime*p%Vprimepsi
           if (c_psi/=0 .and. .not. lpsi_hom) then
-            call div_grad(f,p,ipsi,del2psi)
+            call div_grad(f,p,ipsi,p%gpsi,del2psi)
             df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) + c_psi**2*pref_del2*del2psi
           endif
         endif
@@ -2787,7 +2789,7 @@ module Special
 !
     endsubroutine special_after_timestep
 !***********************************************************************
-    subroutine div_grad(f,p,k,del2f)
+    subroutine div_grad(f,p,k,grad,del2f)
 !
 ! Computes ∇_a(D^af).
 ! In FLRW the this is proportional to del2/a^2, but with conformal
@@ -2796,11 +2798,12 @@ module Special
 !
 !  16-nov-26/TP: coded
 !
-      use Sub, only: del2, grad, g2ij, contract_vec, raise_index
+      use Sub, only: del2, g2ij, contract_vec, raise_index
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
       integer :: k
+      real, intent(in), dimension(nx,3) :: grad
       real, dimension(nx) :: del2f
 !
       real, dimension(nx,3) :: df,df_up
@@ -2811,8 +2814,7 @@ module Special
 
       call del2(f,k,del2f,p%gr_gamu,p%gr_Gamd,lgr=lgr_metric)
       if(lgr_metric) then
-        call grad(f,k,df)
-        tmp = contract_vec(p%gr_dalp,df,p%gr_gamu)
+        tmp = contract_vec(p%gr_dalp,grad,p%gr_gamu)
         del2f=p%gr_alp*del2f+tmp
       endif
 !
