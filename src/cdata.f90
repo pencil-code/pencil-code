@@ -119,7 +119,7 @@ module Cdata
 !
 !  Alternative coordinate systems: spherical, cylindric.
 !
-  character (len=9) :: coord_system='cartesian'
+  character (len=labellen) :: coord_system='cartesian'
   logical :: lcartesian_coords=.true.
   logical :: lspherical_coords=.false.,lcylindrical_coords=.false.
   logical :: lpipe_coords=.false.
