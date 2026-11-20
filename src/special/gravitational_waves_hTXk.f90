@@ -3043,13 +3043,17 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                   dS_X_re=S_X_re(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressX  )
                   dS_X_im=S_X_im(ikx,iky,ikz)-f(nghost+ikx,nghost+iky,nghost+ikz,iStressXim)
                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  )=f(nghost+ikx,nghost+iky,nghost+ikz,ihhX  ) &
-                    +dS_X_re*om12*(dt-om1*sinot)
+!                   +dS_X_re*om12*(dt-om1*sinot)
+                    +dS_X_re*om12*(1.-om1*dt1*sinot)
                   f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim)=f(nghost+ikx,nghost+iky,nghost+ikz,ihhXim) &
-                    +dS_X_im*om12*(dt-om1*sinot)
+!                   +dS_X_im*om12*(dt-om1*sinot)
+                    +dS_X_im*om12*(1.-om1*dt1*sinot)
                   f(nghost+ikx,nghost+iky,nghost+ikz,iggX  )=f(nghost+ikx,nghost+iky,nghost+ikz,iggX  ) &
-                    +dS_X_re*om12*(1.-cosot)
+!                   +dS_X_re*om12*(1.-cosot)
+                    +dS_X_re*om12*dt1*(1.-cosot)
                   f(nghost+ikx,nghost+iky,nghost+ikz,iggXim)=f(nghost+ikx,nghost+iky,nghost+ikz,iggXim) &
-                    +dS_X_im*om12*(1.-cosot)
+!                   +dS_X_im*om12*(1.-cosot)
+                    +dS_X_im*om12*dt1*(1.-cosot)
                 endif
 !
               endif
