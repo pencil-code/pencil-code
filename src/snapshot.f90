@@ -81,7 +81,7 @@ module Snapshot
 !
       use General, only: safe_character_assign
       use Sub, only: read_snaptime, update_snaptime
-      use Equ, only: drop_diagnostic_controls
+      use Diagnostics_methods, only: drop_diagnostic_controls
 !
       real, dimension (:,:,:,:) :: a
 !
@@ -319,7 +319,7 @@ module Snapshot
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
       use Chemistry, only: make_flame_index, make_mixture_fraction
-      use Equ, only: drop_diagnostic_controls
+      use Diagnostics_methods, only: drop_diagnostic_controls
       use General, only: itoa
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
@@ -949,7 +949,7 @@ module Snapshot
       use Boundcond, only: update_ghosts
       use Power_spectrum, only: powerhel
       use Sub, only: update_snaptime
-      use Equ, only: drop_diagnostic_controls
+      use Diagnostics_methods, only: drop_diagnostic_controls
       use General, only: loptest
 !
       real, contiguous, dimension(:,:,:,:) :: f

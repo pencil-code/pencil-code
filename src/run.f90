@@ -59,7 +59,8 @@ contains
 subroutine helper_loop(f)
 !
   use Boundcond, only: update_ghosts
-  use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries,fetch_diagnostic_controls
+  use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries
+  use Diagnostics_methods, only:fetch_diagnostic_controls
   use Diagnostics, only: allocate_fnames
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
@@ -239,7 +240,7 @@ endsubroutine helper_loop
 !  01-Apr-25/Madeline: coded (originally inlined in run.f90)
 !
     use Boundcond, only: update_ghosts
-    use Equ, only: drop_diagnostic_controls
+    use Diagnostics_methods, only: drop_diagnostic_controls
     use GPU, only: copy_farray_from_GPU
     use Messages, only: fatal_error
     use Power_spectrum, only: wsnap_UETCs
@@ -247,14 +248,14 @@ endsubroutine helper_loop
     real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
     real(KIND=rkind8) :: tlast
-    logical, save :: lfirst=.true.
+    logical, save :: lfirstcall=.true.
     logical :: lexist
     integer :: lun, ios
 !
     if (duetc==impossible .or. .not.UETC_spec) return
 !
-    if (lfirst) then
-      lfirst=.false.
+    if (lfirstcall) then
+      lfirstcall=.false.
       tuetc=t
       inquire(file=trim(directory_snap)//'/UETCS_time.dat',exist=lexist)
       if (lexist) then
