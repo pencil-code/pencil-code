@@ -677,7 +677,7 @@ module Particles_stalker
 !  With GPUs: if stalker data are due, copies f and fp from the GPU and asks
 !  the helper thread to write them. Called by the master thread.
 !
-      use Equ, only: drop_diagnostic_controls
+      use Diagnostics_methods, only: drop_diagnostic_controls
       use Gpu, only: copy_farray_from_GPU
 !
       real, dimension (mx,my,mz,mfarray) :: f

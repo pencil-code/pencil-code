@@ -19,8 +19,6 @@ module Equ
   public :: perform_diagnostics
   public :: calc_all_module_diagnostic_auxiliaries
   public :: set_dt1_max !needed by some timestep modules
-  public :: drop_diagnostic_controls
-  public :: fetch_diagnostic_controls
 !
   real, public    :: before_and_after_boundary_sum_time=0.
   real, public    :: time_spent_copying_and_waiting=0.
@@ -61,6 +59,7 @@ module Equ
       use Chiral
       use Chemistry
       use Density
+      use Diagnostics_methods
       use Driver, only: driver_apply
       use Energy
       use EquationOfState
@@ -650,12 +649,13 @@ module Equ
 !
       use Magnetic,only: calc_diagnostic_auxiliaries_magnetic
       use Diagnostics
+      use Diagnostics_methods
 !$    use OMP_lib
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case) :: p
 
-      integer :: imn
+      integer :: imn_loc
 !
 !  Parallelization across all helper threads.
 !
@@ -665,9 +665,9 @@ module Equ
 !$    call fetch_diagnostic_controls
 !
       !$omp do
-      do imn=1,nyz
-        n=nn(imn)
-        m=mm(imn)
+      do imn_loc=1,nyz
+        n=nn(imn_loc)
+        m=mm(imn_loc)
 !
 !  For the moment calc_all_diagnostic_auxilaries does not support coarse grid
 !
@@ -724,12 +724,13 @@ module Equ
       use Viscosity, only: calc_diagnostics_viscosity
       use Special, only: calc_diagnostics_special
       use Diagnostics
+      use Diagnostics_methods
 !$    use OMP_lib
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type(pencil_case) :: p
 
-      integer :: imn
+      integer :: imn_loc
 !
 !  Parallelization across all helper threads.
 !
@@ -756,7 +757,7 @@ module Equ
 !  it does not fit on the thread stacks.
 !
       !$omp do
-      do imn=1,nyz
+      do imn_loc=1,nyz
         !Done since with multithreading RHS is not evaluated
         !Kishore: why do we not need to zero maxdiffus2, maxdiffus3, maxsrc here?
         !TP: They are normally zeroed out on rhs_cpu, which the GPU control-flow never calls.
@@ -767,8 +768,8 @@ module Equ
           advec_cs2    = 0.0
           advec2_hypermesh  = 0.0
         endif
-        n=nn(imn)
-        m=mm(imn)
+        n=nn(imn_loc)
+        m=mm(imn_loc)
 !
 !  For the moment calc_all_module_diagnostics does not support coarse grid
 !
@@ -822,8 +823,8 @@ module Equ
 !     before others can write to p_fname.
 !     I believe this is needed only in extreme cases, but better to have it to be on the safe side.
       !$omp barrier
-!!$    do imn=0,num_helper_threads-1   !MR: loop to enforce ordered accumulation
-!!$      if (omp_get_thread_num() == imn) then
+!!$    do imn_loc=0,num_helper_threads-1   !MR: loop to enforce ordered accumulation
+!!$      if (omp_get_thread_num() == imn_loc) then
 !$        call prep_finalize_thread_diagnos
 !$omp critical !finalize_thread_diags
 !$        if (omp_get_thread_num() /= 0) call diagnostics_reductions  ! all threads except diagmaster
@@ -2052,115 +2053,6 @@ module Equ
       endif
 
     endsubroutine set_dt1_max
-!***********************************************************************
-    subroutine drop_diagnostic_controls(lsnap_time)
-
-      use General, only: loptest
-      use Hydro, only: hydro_drop_diagnostic_controls
-      use Training, only: training_drop_diagnostic_controls
-
-      logical, optional :: lsnap_time
-!
-!  Saves the diagnostic controls as they are now at the current time
-!  so the helper thread can read them later when it wakes up
-!
-!  25-aug-23/TP: Coded
-!  19-march-25/TP: moved from Equ to here
-!
-      if (loptest(lsnap_time)) then
-        t_snap_save = t
-        return
-      endif
-
-      t_save  = t
-      l1davgfirst_save = l1davgfirst
-      ldiagnos_save = ldiagnos
-      l1dphiavg_save = l1dphiavg
-      l2davgfirst_save = l2davgfirst
-
-      lout_save = lout
-      l1davg_save = l1davg
-      l2davg_save = l2davg
-      lout_sound_save = lout_sound
-      lvideo_save = lvideo
-      delta_y_save = delta_y
-!
-!  Record times for diagnostic and 2d average output.
-!
-      if (l1davgfirst) t1ddiagnos_save=real(t) ! (1-D averages are for THIS time)
-      if (l2davgfirst) t2davgfirst_save=real(t) ! (2-D averages are for THIS time)
-      if (lvideo     ) tslice_save=real(t) ! (slices are for THIS time)
-      if (lout_sound ) tsound_save=real(t)
-!     NOTE: tspec_save is set in powersnap
-      if (ldiagnos) then
-        dt_save = dt
-        it_save = it
-        eps_rkf_save = eps_rkf
-      endif
-      lpencil_save = lpencil
-
-      scl_factor_target_save = scl_factor_target
-      Hp_target_save = Hp_target
-      appa_target_save = appa_target
-
-!$    call hydro_drop_diagnostic_controls
-!$    call training_drop_diagnostic_controls
-
-    endsubroutine drop_diagnostic_controls
-!***********************************************************************
-    subroutine fetch_diagnostic_controls(lsnap_time)
-
-    use General, only: loptest
-    use Hydro, only: hydro_fetch_diagnostic_controls
-    use Training, only: training_fetch_diagnostic_controls
-
-    logical, optional :: lsnap_time
-!
-!   Restores the diagnostics flags that were saved by master when it asked for diagnostics.
-!
-!   13-nov-23/TP: Written
-!   19-march-25/TP: moved from Equ to here
-!
-    if (loptest(lsnap_time)) then
-      t = t_snap_save
-      return
-    endif
-
-    l1davgfirst = l1davgfirst_save
-    ldiagnos = ldiagnos_save
-    l1dphiavg = l1dphiavg_save
-    l2davgfirst = l2davgfirst_save
-
-    lout = lout_save
-    l1davg = l1davg_save
-    l2davg = l2davg_save
-    lout_sound = lout_sound_save
-    lvideo = lvideo_save
-    !TP: for mulithreading it is always the first substep
-    lvideo_first = lvideo_save
-    t1ddiagnos = t1ddiagnos_save
-    t2davgfirst= t2davgfirst_save
-    tslice = tslice_save
-    tsound = tsound_save
-    t = t_save
-    delta_y = delta_y_save
-
-    scl_factor_target   = scl_factor_target_save
-    Hp_target   = Hp_target_save
-    appa_target = appa_target_save
-
-    tdiagnos  = real(t_save)
-    dtdiagnos = dt_save
-    itdiagnos = it_save
-    eps_rkf_diagnos = eps_rkf_save
-
-    tspec = real(tspec_save)
-    lpencil = lpencil_save
-
-!$  call hydro_fetch_diagnostic_controls
-!$  call training_fetch_diagnostic_controls
-
-    endsubroutine fetch_diagnostic_controls
 !***********************************************************************
     subroutine test_rhs_gpu(f,p,mass_per_proc,early_finalize,cpu_version)
 !
