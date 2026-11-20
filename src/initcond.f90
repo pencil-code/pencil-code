@@ -2771,7 +2771,8 @@ module Initcond
 !
     endsubroutine rotated_robertsflow
 !***********************************************************************
-    subroutine cyl_rot_strain(ampl,f,i,relhel,kx,flow,init_the,init_phi,smix)
+    subroutine cyl_rot_strain(ampl,f,i,relhel,kx,flow,init_the,init_phi,smix, &
+      init_varthe,init_varphi,init_zeta)
 !
 !  cyl_rot_strain
 !
@@ -2781,8 +2782,11 @@ module Initcond
       real, dimension(:,:,:), allocatable :: xx, yy, zz, rr, cosr, mask
       real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl, k=1., fac1, fac2, relhel, init_the1, init_phi1, smix1
+      real :: init_varthe1,init_varphi1,init_zeta1
       real :: cthe, sthe, cphi, sphi, norm
+      real :: cvarthe, svarthe, cvarphi, svarphi, czeta, szeta
       real, optional :: kx, init_the, init_phi, smix
+      real, optional :: init_varthe,init_varphi,init_zeta
       character (len=labellen) :: flowtype='I'
       character (len=labellen), optional :: flow
 !
@@ -2790,6 +2794,30 @@ module Initcond
 !
       if (present(kx)) then
         k=kx
+      endif
+!
+!  Possibility of changing the angle zeta
+!
+      if (present(init_zeta)) then
+        init_zeta1=init_zeta
+      else
+        init_zeta1=0.
+      endif
+!
+!  Possibility of changing the angle varthe
+!
+      if (present(init_varthe)) then
+        init_varthe1=init_varthe
+      else
+        init_varthe1=0.
+      endif
+!
+!  Possibility of changing the angle varphi
+!
+      if (present(init_varphi)) then
+        init_varphi1=init_varphi
+      else
+        init_varphi1=0.
       endif
 !
 !  Possibility of changing the mixing ratio
@@ -2855,15 +2883,33 @@ module Initcond
 !
 !  In the following, relhel corresponds to theta*pi/2, and fac1 and fac2 are their cosine and sine values.
 !
+      elseif (flowtype=='Generalized-Sphere') then
+        cthe=cos(dtor*init_the1)
+        sthe=sin(dtor*init_the1)
+        cphi=cos(dtor*init_phi1)
+        sphi=sin(dtor*init_phi1)
+        cvarthe=cos(dtor*init_varthe1)
+        svarthe=sin(dtor*init_varthe1)
+        cvarphi=cos(dtor*init_varphi1)
+        svarphi=sin(dtor*init_varphi1)
+        czeta=cos(dtor*init_zeta1)
+        szeta=sin(dtor*init_zeta1)
+        norm=1./sqrt(1.+(cthe+sthe)**2)
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*svarthe*(norm*sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*svarthe*(norm*sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)-mask*svarthe*norm*sphi*(sthe+cthe)*zz*smix1+cvarthe*(xx*szeta+yy*czeta)
+!
+!  In the following, relhel corresponds to theta*pi/2, and fac1 and fac2 are their cosine and sine values.
+!
       elseif (flowtype=='Sphere') then
         cthe=cos(dtor*init_the1)
         sthe=sin(dtor*init_the1)
         cphi=cos(dtor*init_phi1)
         sphi=sin(dtor*init_phi1)
         norm=1./sqrt(1.+(cthe+sthe)**2)
-        j=i+0; f(:,:,:,j)=f(:,:,:,j)+norm*mask*(sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
-        j=i+1; f(:,:,:,j)=f(:,:,:,j)+norm*mask*(sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
-        j=i+2; f(:,:,:,j)=f(:,:,:,j)-norm*mask*sphi*(sthe+cthe)*zz*smix1
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*(norm*sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*(norm*sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
+        j=i+2; f(:,:,:,j)=f(:,:,:,j)-mask*norm*sphi*(sthe+cthe)*zz*smix1
 !
 !  In the following, relhel corresponds to theta*pi/2, and fac1 and fac2 are their cosine and sine values.
 !  In units of pi
