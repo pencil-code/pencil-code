@@ -24,48 +24,15 @@ module HDF5_IO
 !
   implicit none
 !
+!  Generic interfaces are declared in hdf5_io.h; here only the procedures specific to chunked output are added.
+!
   interface input_hdf5
-    module procedure input_hdf5_string
-    module procedure input_hdf5_int_0D
     module procedure input_local_hdf5_int_1D_0D
-    module procedure input_hdf5_int_1D
-    module procedure input_hdf5_0D
-    module procedure input_hdf5_1D
-    module procedure input_hdf5_part_2D
-    module procedure input_hdf5_profile_1D
-    module procedure input_hdf5_2D
-    module procedure input_hdf5_3D
-    module procedure input_hdf5_4D
   endinterface
 !
   interface output_hdf5
-    module procedure output_hdf5_string
-    module procedure output_hdf5_int_0D
-    module procedure output_hdf5_int_1D
-    module procedure output_hdf5_0D
-    module procedure output_hdf5_1D
-    module procedure output_hdf5_pencil_1D
-    module procedure output_hdf5_part_2D
-    module procedure output_hdf5_profile_1D
     module procedure output_local_hdf5_1D_0D
     module procedure output_local_hdf5_int_1D_0D
-    module procedure output_local_hdf5_2D
-    module procedure output_hdf5_slice_2D
-    module procedure output_local_hdf5_3D
-    module procedure output_hdf5_3D
-    module procedure output_local_hdf5_4D
-    module procedure output_hdf5_4D
-  endinterface
-!
-  interface hdf5_input_slice
-    module procedure input_slice_2D
-    module procedure input_slice_real_arr
-    module procedure input_slice_scat
-  endinterface
-!
-  interface output_hdf5_double
-    module procedure output_hdf5_double_0D
-    module procedure output_hdf5_double_1D
   endinterface
 !
   include 'hdf5_io.h'
@@ -361,7 +328,11 @@ module HDF5_IO
       character(len=*), intent(in) :: name
 !
       exists_in_hdf5 = .false.
-      if (.not. lwrite) return
+!
+!  For a collectively opened file, all ranks have to query, as e.g. create_group_hdf5 is collective then
+!  and must be called by all or none.
+!
+      if (.not. (lcollective .or. lwrite)) return
 !
       call h5lexists_f(h5_file, trim (name), exists_in_hdf5, h5_err)
       call check_error (h5_err, 'check for existence of "'//trim (name)//'"', caller='exists_in_hdf5')
@@ -2576,19 +2547,23 @@ module HDF5_IO
 !
     endsubroutine trim_average
 !***********************************************************************
-    subroutine output_timeseries(data, data_im)
+    subroutine output_timeseries(data, data_im, data_loc)
 !
 !  Append diagnostic data to 'time_series.h5' file.
+!  For extrema with location request, data_loc holds global indices or coordinates and rank.
 !
 !  18-Apr-2026/PABourdin: adapted from hdf5_io_parallel
 !
       use File_io, only: file_exists
-      use General, only: itoa
+      use General, only: itoa, location_labels
 !
       real, dimension(2*nname), intent(in) :: data, data_im
+      real, dimension(4,nname), intent(in) :: data_loc
 !
-      integer :: pos
+      integer :: pos, iloc
       character (len=fmtlen) label
+      character (len=4), dimension(4) :: loc_labels
+      logical :: lindices
       character(len=fnlen) :: filename
       logical :: lexists
       integer :: last, last_iter
@@ -2631,6 +2606,15 @@ module HDF5_IO
         if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
           call output_hdf5 (trim (label)//'/imaginary_part', data_im(pos), ts_offsets(pos), chunk_size)
         endif
+        if (location_labels(pos,loc_labels,lindices)) then
+          do iloc=1,4
+            if (lindices .or. iloc==4) then
+              call output_hdf5 (trim(label)//'/'//trim(loc_labels(iloc)), nint(data_loc(iloc,pos)), ts_offsets(pos), chunk_size)
+            else
+              call output_hdf5 (trim(label)//'/'//trim(loc_labels(iloc)), data_loc(iloc,pos), ts_offsets(pos), chunk_size)
+            endif
+          enddo
+        endif
         call output_hdf5 (trim (label)//'/iteration', it-1, ts_offsets(pos), chunk_size)
         call output_hdf5 (trim (label)//'/last', ts_offsets(pos))
         ts_offsets(pos) = ts_offsets(pos) + 1
@@ -2667,7 +2651,7 @@ module HDF5_IO
 !
     endsubroutine input_slice_real_arr
 !***********************************************************************
-    subroutine input_slice_scat(file, pos, data, ind, nt)
+    subroutine input_slice_scat_arr(file, pos, data, ind, nt)
 !
 !  dummy
 !
@@ -2686,7 +2670,7 @@ module HDF5_IO
       call keep_compiler_quiet (pos)
       call keep_compiler_quiet (ind,nt)
 !
-    endsubroutine input_slice_scat
+    endsubroutine input_slice_scat_arr
 !***********************************************************************
     subroutine input_slice_2D(datadir, time, label, suffix, pos, data)
 !

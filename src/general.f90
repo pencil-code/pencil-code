@@ -60,7 +60,7 @@ module General
   public :: linspace
   public :: linear_interpolate_2d, linear_interpolate_1d, get_linterp_weights_1D, interpol_tabulated
   public :: chk_time
-  public :: get_species_nr,posindex_to_1Dindex,expand_1Dindex
+  public :: get_species_nr,posindex_to_1Dindex,expand_1Dindex,location_labels
   public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,get_from_nml_int,convert_nml
   public :: compress_nvidia
   public :: qualify_position_bilin, qualify_position_bicub, &
@@ -6663,6 +6663,37 @@ iloop:do i=1,size(list2)
       indx=indx+1; indy=indy+1; indz=indz+1
 
     endsubroutine expand_1Dindex
+!***********************************************************************
+    logical function location_labels(iname,labels,lindices)
+!
+!  True if diagnostic slot iname is an extremum with location request.
+!  Then returns in labels the names of the four location items and in lindices
+!  whether the location is given by global indices ("integer" location format) or by coordinates.
+!
+      use Cdata, only: itype_name, cform
+!
+      integer, intent(in) :: iname
+      character(len=*), dimension(4), intent(out) :: labels
+      logical, intent(out) :: lindices
+!
+      integer :: iname_loc
+!
+      location_labels=.false.
+      lindices=.false.
+      labels=''
+      if (itype_name(iname)>=0) return
+      iname_loc=itype_name(iname)/ilabel_extr_lim
+      if (iname_loc<=0) return
+!
+      location_labels=.true.
+      lindices=index(cform(iname_loc),'.0')/=0
+      if (lindices) then
+        labels=(/'ix  ','iy  ','iz  ','rank'/)
+      else
+        labels=(/'x   ','y   ','z   ','rank'/)
+      endif
+!
+    endfunction location_labels
 !***********************************************************************
     subroutine allocate_using_dims_1d(src, dims)
 !

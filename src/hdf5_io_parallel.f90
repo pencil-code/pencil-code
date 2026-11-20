@@ -2159,19 +2159,23 @@ module HDF5_IO
 !
     endsubroutine trim_average
 !***********************************************************************
-    subroutine output_timeseries(data, data_im)
+    subroutine output_timeseries(data, data_im, data_loc)
 !
 !  Append diagnostic data to 'time_series.h5' file.
+!  For extrema with location request, data_loc holds global indices or coordinates and rank.
 !
 !  01-Apr-2019/PABourdin: coded
 !
       use File_io, only: file_exists
-      use General, only: itoa
+      use General, only: itoa, location_labels
 !
       real, dimension(2*nname), intent(in) :: data, data_im
+      real, dimension(4,nname), intent(in) :: data_loc
 !
-      integer :: pos, iteration
+      integer :: pos, iteration, iloc
       character (len=fmtlen) label
+      character (len=4), dimension(4) :: loc_labels
+      logical :: lindices
       character(len=fnlen) :: filename
       logical :: lexists
       integer, save :: offset = -1
@@ -2194,6 +2198,16 @@ module HDF5_IO
           label = trim(label)//'/imaginary_part'
           call create_group_hdf5 (label)
           call output_hdf5 (trim (label)//'/'//itoa (iteration), data_im(pos))
+        endif
+        if (location_labels(pos,loc_labels,lindices)) then
+          do iloc=1,4
+            call create_group_hdf5 (trim(label)//'/'//trim(loc_labels(iloc)))
+            if (lindices .or. iloc==4) then
+              call output_hdf5 (trim(label)//'/'//trim(loc_labels(iloc))//'/'//itoa(iteration), nint(data_loc(iloc,pos)))
+            else
+              call output_hdf5 (trim(label)//'/'//trim(loc_labels(iloc))//'/'//itoa(iteration), data_loc(iloc,pos))
+            endif
+          enddo
         endif
       enddo
       call output_hdf5 ('last', iteration)

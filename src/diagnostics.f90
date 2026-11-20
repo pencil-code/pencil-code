@@ -317,7 +317,7 @@ module Diagnostics
 !  26-aug-13/MR: corrected insertion of imaginary values
 !  12-jan-17/MR: undefined diagnostics suppressed in output
 !
-      use General, only: safe_character_append, compress, expand_1Dindex, find_proc_coords
+      use General, only: safe_character_append, compress, expand_1Dindex, find_proc_coords, location_labels
       use Cparam, only: max_col_width
       use IO, only: IO_strategy
       use HDF5_IO, only: output_timeseries
@@ -327,9 +327,12 @@ module Diagnostics
       character (len=max_diagnostics*max_col_width) :: fform,legend,line
       integer :: iname,nnamel,ix_loc,iy_loc,iz_loc,rank,ipx_loc,ipy_loc,ipz_loc
       real, dimension(5*nname) :: buffer
+      real, dimension(4,nname) :: locs
+      character(len=4), dimension(4) :: loc_labels
+      logical :: lindices
       integer, parameter :: lun=1
       logical, save :: lfirst_call = .true.
-      integer :: itype, iname_loc, inamel, iostat
+      integer :: itype, inamel, iostat
       character(LEN=iomsglen) :: iomsg
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
@@ -381,9 +384,25 @@ module Diagnostics
                itype_name(1:nname)<ilabel_ignore .and. itype_name(1:nname)>=0 ) &
            buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
+!  Decode the locations of extrema with location request into locs(:,iname):
+!  global indices (if location format is "integer") or coordinates, and rank.
+!
+        locs=0.
+        do iname=1,nname
+          if (location_labels(iname,loc_labels,lindices)) then     ! extremum with location
+            call expand_1Dindex(fname_keep(iname),ix_loc,iy_loc,iz_loc,rank=rank)
+            call find_proc_coords(rank,ipx_loc,ipy_loc,ipz_loc)     ! proc coordinates from rank
+            if (lindices) then
+              locs(:,iname)=(/real(ix_loc+ipx_loc*nx),real(iy_loc+ipy_loc*ny),real(iz_loc+ipz_loc*nz),real(rank)/)
+            else
+              locs(:,iname)=(/xgrid(ix_loc+ipx_loc*nx),ygrid(iy_loc+ipy_loc*ny),zgrid(iz_loc+ipz_loc*nz),real(rank)/)
+            endif
+          endif
+        enddo
+!
 !  Write 'time_series.h5' if output format is HDF5.
 !
-        if (IO_strategy == "HDF5".and.lwrite_ts_hdf5) call output_timeseries (buffer, fname_keep)
+        if (IO_strategy == "HDF5".and.lwrite_ts_hdf5) call output_timeseries (buffer, fname_keep, locs)
         nnamel=nname
 !
         call compress(buffer,cform=='' .or. itype_name==ilabel_ignore,nnamel)
@@ -395,7 +414,7 @@ module Diagnostics
             call insert(buffer,(/fname_keep(iname)/),iname+1,nnamel)      !MR: correct after compression?
         enddo
 !
-!  Expand fname_keep and insert into buffer if entry is a location.
+!  Insert the decoded locations into buffer behind the extremum.
 !
         inamel=nnamel
 
@@ -403,22 +422,7 @@ module Diagnostics
 
           itype=itype_name(iname)
           if (itype<0) then
-            iname_loc = itype/ilabel_extr_lim   ! extract the location index
-
-            if (iname_loc>0) then               ! extremum with location
-!
-!  Expand the data item into location indices and rank.
-!
-              call expand_1Dindex(fname_keep(iname),ix_loc,iy_loc,iz_loc,rank=rank)
-              call find_proc_coords(rank,ipx_loc,ipy_loc,ipz_loc) ! proc coordinates from rank
-              if (index(cform(iname_loc),'.0')/=0) then           ! "integer" format -> global indices in timeseries
-                call insert(buffer,(/real(ix_loc+ipx_loc*nx),real(iy_loc+ipy_loc*ny),real(iz_loc+ipz_loc*nz), &
-                            real(rank)/),inamel+1,nnamel)
-              else                                                ! float format -> coordinates in timeseries
-                call insert(buffer,(/xgrid(ix_loc+ipx_loc*nx),ygrid(iy_loc+ipy_loc*ny),zgrid(iz_loc+ipz_loc*nz), &
-                            real(rank)/),inamel+1,nnamel)
-              endif
-            endif
+            if (itype/ilabel_extr_lim>0) call insert(buffer,locs(:,iname),inamel+1,nnamel)  ! extremum with location
           endif
           if (itype/=ilabel_ignore .and. cform(iname)/='') inamel=inamel-1
 
@@ -530,7 +534,7 @@ module Diagnostics
 !  10-jan-17/MR: added adjustment of fixed point format to output value
 !  12-jan-17/MR: undefined diagnostics suppressed in format
 !
-      use General, only: safe_character_append, itoa
+      use General, only: safe_character_append, itoa, location_labels
       use Sub, only: noform, len_fmtd_expr
 !
       character (len=*)          ,intent(OUT) :: fform
@@ -542,6 +546,7 @@ module Diagnostics
       character(len=len(cform)) :: cform_loc,cform_ext
       integer             :: iname,lenrank,lenloc,iname_loc,indloc
       character(len=4), dimension(4) :: addtexts
+      logical             :: lindices, lloc
       integer, dimension(4) :: addlengths
 !
 !  Produce the format.
@@ -596,13 +601,9 @@ module Diagnostics
 !
                  addlengths = (/lenloc+2,lenloc+1,lenloc+1,lenrank+1/)
 !
-!  Additional header texts for location.
+!  Additional header texts for location: ix,iy,iz or x,y,z for "integer" or float location format, and rank.
 !
-                if (index(cform_loc,'.0')/=0) then         ! a quasi-integer format -> indices
-                  addtexts=(/'ix  ','iy  ','iz  ','rank'/)
-                else                                       ! float format -> coordinates
-                  addtexts=(/'x   ','y   ','z   ','rank'/)
-                endif
+                lloc=location_labels(iname,addtexts,lindices)   ! always true here; only addtexts used
                 call safe_character_append(legend,noform(cname(iname),addlengths=addlengths,addtexts=addtexts))
               endif
 

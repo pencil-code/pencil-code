@@ -546,16 +546,18 @@ module HDF5_IO
 !
     endsubroutine output_dim
 !***********************************************************************
-    subroutine output_timeseries(data, data_im)
+    subroutine output_timeseries(data, data_im, data_loc)
 !   
 !  Append diagnostic data to a binary file.
 !   
 !  01-Apr-2019/PABourdin: coded
 ! 
       real, dimension(2*nname), intent(in) :: data, data_im
+      real, dimension(4,nname), intent(in) :: data_loc
 ! 
       call keep_compiler_quiet(data)
       call keep_compiler_quiet(data_im)
+      call keep_compiler_quiet(data_loc)
 !                       
     endsubroutine output_timeseries
 !***********************************************************************
