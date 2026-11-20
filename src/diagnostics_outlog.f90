@@ -1122,7 +1122,7 @@ module Diagnostics
       intent(inout) :: cname,itest
       intent(out)   :: cform
 
-      character(len=fmtlen) :: tmp
+      character(len=len(cform)) :: tmp
 !
 !  Check whether format is given.
 !

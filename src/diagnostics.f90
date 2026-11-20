@@ -538,7 +538,7 @@ module Diagnostics
       character, parameter:: comma=','
       character(len=2048) :: tform
       logical             :: lcompl
-      character(len=32)   :: cform_loc,cform_ext
+      character(len=len(cform)) :: cform_loc,cform_ext
       integer             :: iname,lenrank,lenloc,iname_loc
       character(len=4), dimension(4) :: addtexts
       integer, dimension(4) :: addlengths
@@ -615,9 +615,9 @@ contains
 !  then increasing teh field width.
 !
         integer, intent(IN) :: iname
-        character(len=fmtlen) :: form
+        character(len=len(cform)) :: form
 
-        character(len=fmtlen) :: tail
+        character(len=len(cform)) :: tail
         integer             :: index_i,index_d,index_c
         integer             :: dlength,flength,mlength,nlength
 
@@ -1566,7 +1566,7 @@ contains
       intent(out)   :: cform
 
       integer :: iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
-      character(len=fmtlen) :: tmp
+      character(len=len(cform)) :: tmp
 !
 !  Check whether format is given.
 !

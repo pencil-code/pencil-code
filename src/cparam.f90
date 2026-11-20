@@ -110,7 +110,7 @@ module Cparam
 !  iomsglen       length of I/O error messages
 !
   integer, parameter :: fnlen=512,intlen=21,bclen=3,labellen=40,linelen=fnlen+256,iomsglen=256
-  integer, parameter :: datelen=30,max_col_width=64,nscbc_len=24,fmtlen=30
+  integer, parameter :: datelen=30,max_col_width=64,nscbc_len=24,fmtlen=64
 !
 !  Significant length of random number generator state.
 !  Different compilers have different lengths:

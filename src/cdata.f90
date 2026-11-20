@@ -773,7 +773,7 @@ module Cdata
   integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2), target :: fname_half
   integer :: name_half_max=0, ntmax1Dav=500, ntmax2Dav=500
-  character (len=30) :: cname_half(mname_half)
+  character (len=fmtlen) :: cname_half(mname_half)
 !  Radius inside of which diagnostics are calculated for sphere_in_a_box models
   real :: radius_diag=1.0
   real :: offset_min_calc=0.   !PAR_DOC: offset value for computing negative minima,

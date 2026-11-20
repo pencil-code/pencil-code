@@ -4909,7 +4909,8 @@ subroutine dot_mn_sv_pencil(a,b,c)
       integer, dimension(:), optional :: addlengths
       character(LEN=*), dimension(:), optional :: addtexts
 
-      character (len=max_col_width) :: noform,cform,dashes
+      character (len=max_col_width) :: noform,dashes
+      character (len=len(cname)) :: cform
       integer :: iform0,iform1,iform2,length,number,number1,number2,dashlen,lendiff,ii
 !
       intent(in)  :: cname

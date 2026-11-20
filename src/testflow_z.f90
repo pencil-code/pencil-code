@@ -2340,11 +2340,11 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
       character*(*), intent(in) :: cdiagname
 !
-      character(len=30) cformat
+      character(len=len(cname)) cformat
 !
       integer :: iname, i, j, nname_form, indx, matsize1, matsize2, addsize
       character cind1, cind2
-      character(len=60), dimension(:), allocatable :: entries
+      character(len=len(cname)), dimension(:), allocatable :: entries
 !
       matsize1=min(size(mat_diag_indices,1),ijmax)
       matsize2=min(size(mat_diag_indices,2),ijmax)
@@ -2430,7 +2430,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
       character*(*), intent(in) :: cdiagname
 !
-      character(len=30) cformat
+      character(len=len(cname)) cformat
 !
       integer :: iname, i, nname_form, indx, matsize
 !

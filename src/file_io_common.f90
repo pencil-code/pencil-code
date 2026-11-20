@@ -526,10 +526,10 @@ module File_io
       use Messages, only: fatal_error
 !
       character (len=*), intent(in) :: in_file
-      character (len=30), dimension(*), intent(out) :: cnamel
+      character (len=*), dimension(*), intent(out) :: cnamel
       integer, intent(out) :: nnamel
 !
-      character (len=30) :: cname_tmp
+      character (len=len(cnamel)) :: cname_tmp
       integer :: io_err
 !
       nnamel = 0

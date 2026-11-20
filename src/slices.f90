@@ -128,7 +128,7 @@ contains
       logical :: lfslices
       integer :: inamev
       type (slice_data) :: slices
-      character (LEN=labellen) :: sname
+      character (LEN=len(cnamev)) :: sname
       real :: time1
 !
       lfslices = loptest(lbefore_ts,.false.)
