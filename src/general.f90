@@ -12,6 +12,7 @@ module General
 !
   public :: gaunoise_number
   public :: safe_character_assign, safe_character_append, safe_character_prepend, safe_string_replace
+  public :: string_has_prefix
   public :: lower_case,upper_case
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
@@ -1203,6 +1204,18 @@ module General
       endif
 
     endsubroutine
+!***********************************************************************
+    logical function string_has_prefix(str, prefix) result(has_prefix)
+!
+      character(len=*) :: str, prefix
+!
+      if (len(str) < len(prefix)) then
+        has_prefix = .false.
+      else
+        has_prefix = (str(1:len(prefix))==prefix)
+      endif
+!
+    endfunction
 !***********************************************************************
     subroutine safe_character_append_2(str1,str2)
 !
