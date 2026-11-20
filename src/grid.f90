@@ -944,23 +944,24 @@ module Grid
       lcylindrical_coords=.false.
       lpipe_coords=.false.
 !
-      if (coord_system=='cartesian') then
+      if (trim(coord_system)=='cartesian') then
         lcartesian_coords=.true.
 !
 !  Introduce new names (spherical_coords), in addition to the old ones.
 !
-      elseif (    coord_system=='spherical' &
-              .or.coord_system=='spherical_coords') then
+      elseif (    trim(coord_system)=='spherical' &
+              .or.trim(coord_system)=='spherical_coords') then
         lspherical_coords=.true.
 !
 !  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
-      elseif (    coord_system=='cylindric' &
-              .or.coord_system=='cylindrical_coords') then
+      elseif (    trim(coord_system)=='cylindric' &
+              .or.trim(coord_system)=='cylindrical' &
+              .or.trim(coord_system)=='cylindrical_coords') then
         lcylindrical_coords=.true.
-      else if (coord_system=='pipeflows') then
+      else if (trim(coord_system)=='pipeflows') then
         lpipe_coords=.true.
-      elseif (coord_system=='Lobachevskii') then
+      elseif (trim(coord_system)=='Lobachevskii') then
         call fatal_error('set_coorsys_dimmask', &
                          'Lobachevskii ccordinates not implemented')
       endif
