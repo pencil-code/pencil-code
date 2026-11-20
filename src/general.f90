@@ -6625,7 +6625,7 @@ iloop:do i=1,size(list2)
 !***********************************************************************
     function posindex_to_1Dindex(indx,indy,indz,rank) result(res)
 !
-!  Forms a 1D index into a (nx,ny,nz)-arrary from the triple index (indx,indy,indz).
+!  Forms a 1D index into a (nx,ny,nz)-array from the triple index (indx,indy,indz).
 !  Optionally, combines with the process rank such that both index and rank can be recovered.
 !  Tripel index is 1-based, rank is 0-based.
 !
@@ -6635,8 +6635,8 @@ iloop:do i=1,size(list2)
       integer, optional, intent(in) :: rank
       real :: res
 
-      res = real(nx)*(ny*(indz-1) + indy-1) + indx-1  ! ranges from 0 to nx*ny*nz-1=nw-1
-      if (present(rank)) res = res + real(nw*rank)          ! -> floor(res/nw) = rank
+      res = real(nx)*(ny*(indz-1) + indy-1) + indx-1     ! ranges from 0 to nx*ny*nz-1=nw-1
+      if (present(rank)) res = res + real(nw)*rank       ! -> floor(res/nw) = rank
 
     endfunction posindex_to_1Dindex
 !***********************************************************************

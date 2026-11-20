@@ -10,7 +10,6 @@ module Equ
   use Grid, only: calc_pencils_grid, get_grid_mn
   use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
                      MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
-
   implicit none
 !
   public :: pde, debug_imn_arrays, initialize_pencils
@@ -20,6 +19,8 @@ module Equ
   public :: perform_diagnostics
   public :: calc_all_module_diagnostic_auxiliaries
   public :: set_dt1_max !needed by some timestep modules
+  public :: drop_diagnostic_controls
+  public :: fetch_diagnostic_controls
 !
   real, public    :: before_and_after_boundary_sum_time=0.
   real, public    :: time_spent_copying_and_waiting=0.
@@ -33,6 +34,11 @@ module Equ
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
+!
+! TP: variables for communication between threads
+!
+  real ::  dt_save,eps_rkf_save
+  integer :: it_save
 !
   contains
 !***********************************************************************
@@ -55,7 +61,6 @@ module Equ
       use Chiral
       use Chemistry
       use Density
-      use Diagnostics, only: drop_diagnostic_controls
       use Driver, only: driver_apply
       use Energy
       use EquationOfState
@@ -84,7 +89,6 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: training_drop_diagnostic_controls
       use Grid, only: coarsegrid_interp
 !$    use OMP_lib
       use Mpicomm
@@ -169,12 +173,6 @@ module Equ
                      lyinyang .or. lgpu .or. &   !!!
                      ncoarse>1 .or. lspecial_early_finalize
 !
-!  Write crash snapshots to the hard disc if the time-step is very low.
-!  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
-!  this to be done.
-!
-      if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
-!
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
       if (.not. lgpu) call impose_floors_ceilings(f)   !MR: too early, f modifications come below
@@ -191,9 +189,8 @@ module Equ
  !
  ! If asked, test that the CPU implementation is correctly executed on the GPUs
  !
-      if (lgpu .and. ltest_rhs .and. it == it_test_rhs) then
+      if (lgpu .and. ltest_rhs .and. it == it_test_rhs) &
         call test_rhs_gpu(f,p,mass_per_proc,early_finalize,rhs_cpu)
-      endif
 
       start_time = real(mpiwtime())
       if (lgpu) then
@@ -323,11 +320,7 @@ module Equ
         start_time = real(mpiwtime())
         call rhs_gpu(itsub)
 !  Should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
-!$      if (ldiagnostic_output) then 
-!$        call drop_diagnostic_controls
-!$        call hydro_drop_diagnostic_controls
-!$        call training_drop_diagnostic_controls
-!$      endif 
+!$      if (ldiagnostic_output) call drop_diagnostic_controls
         end_time = real(mpiwtime())
         rhs_sum_time = rhs_sum_time + end_time-start_time
       else
@@ -589,8 +582,12 @@ module Equ
 !$        do imn=1,size(fname)
 !$          if (allocated(inds_max_diags)) then
 !$            if (any(inds_max_diags == imn) .and. &
-!$                (fname(imn) /= 0. .or. (itype_name(imn)==ilabel_max_neg))) &
-!$              p_fname(imn) = max(p_fname(imn),fname(imn))
+!$                (fname(imn) /= 0. .or. (itype_name(imn)==ilabel_max_neg))) then  !MR: Why these questions?
+!$              if (fname(imn)>p_fname(imn))
+!$                p_fname(imn) = fname(imn)
+!$                p_fname_keep(imn) = fname_keep(imn)
+!$              endif
+!$            endif
 !$          endif
 !$          if (allocated(inds_sum_diags)) then
 !$            if (any(inds_sum_diags == imn)) p_fname(imn) = p_fname(imn) + fname(imn)
@@ -620,8 +617,8 @@ module Equ
 !$        endif
 !$      endif
 !$
-!$      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
-!$      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
+!!!$      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
+!$      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound   !MR: why sum?
 !$      if (allocated(ncountsz)) then
 !         ! ncountsz uses -1 as a marker value; unconditionally adding causes
 !         ! integer overflow (e.g. after 8 iterations of a 64x64x144 run
@@ -653,8 +650,6 @@ module Equ
 !
       use Magnetic,only: calc_diagnostic_auxiliaries_magnetic
       use Diagnostics
-      use Hydro, only: hydro_fetch_diagnostic_controls
-      use Training, only: training_fetch_diagnostic_controls
 !$    use OMP_lib
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
@@ -665,11 +660,9 @@ module Equ
 !  Parallelization across all helper threads.
 !
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
-!$omp copyin(t,dxmax_pencil,lpencil,fname,fnamex,fnamey,fnamez,fnamer,&
-!$omp&       fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp copyin(t,dxmax_pencil,lpencil,fname,fnamex,fnamey,fnamez,fnamer, &
+!$omp        fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call fetch_diagnostic_controls
-!$    call hydro_fetch_diagnostic_controls
-!$    call training_fetch_diagnostic_controls
 !
       !$omp do
       do imn=1,nyz
@@ -713,7 +706,7 @@ module Equ
       use Forcing, only: calc_diagnostics_forcing
       use Gravity, only: calc_diagnostics_gravity
       use Heatflux, only: calc_diagnostics_heatflux
-      use Hydro, only: calc_diagnostics_hydro, hydro_fetch_diagnostic_controls
+      use Hydro, only: calc_diagnostics_hydro
       use Interstellar, only: calc_diagnostics_interstellar
       use Lorenz_gauge, only: calc_diagnostics_lorenz_gauge
       use Magnetic, only: calc_diagnostics_magnetic
@@ -727,7 +720,7 @@ module Equ
       use Selfgravity, only: calc_diagnostics_selfgrav
       use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
-      use Training, only: calc_diagnostics_training, training_fetch_diagnostic_controls
+      use Training, only: calc_diagnostics_training
       use Viscosity, only: calc_diagnostics_viscosity
       use Special, only: calc_diagnostics_special
       use Diagnostics
@@ -750,8 +743,6 @@ module Equ
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm, &
 !$omp fname_half)
 !$    call fetch_diagnostic_controls
-!$    call hydro_fetch_diagnostic_controls
-!$    call training_fetch_diagnostic_controls
 !      
 !     TP: on some nvfortan compilers copyin does not seem to be enough to ensure diagnostic arrays are allocated
 !         not sure was the copyin ever sufficient, but not that important since we can always explicitly check
@@ -1679,41 +1670,6 @@ module Equ
 !
     endsubroutine debug_imn_arrays
 !***********************************************************************
-    subroutine output_crash_files(f)
-!
-!  Write crash snapshots when time-step is low.
-!
-!  15-aug-2007/anders: coded
-!
-      use Snapshot
-!
-      real, contiguous, dimension(:,:,:,:) :: f
-!
-      integer, save :: icrash=0
-      character (len=10) :: filename
-      character (len=1) :: icrash_string
-!
-      if ( (it>1) .and. lfirst .and. (dt<=crash_file_dtmin_factor*dtmin) ) then
-
-        write(icrash_string, fmt='(i1)') icrash
-        filename='crash'//icrash_string//'.dat'
-        call wsnap(filename,f,mvar_io,ENUM=.false.)
-        if (lroot) then
-          print*, 'Time-step is very low - writing '//trim(filename)
-          print*, '(it, itsub=', it, itsub, ')'
-          print*, '(t, dt=', t, dt, ')'
-        endif
-!
-!  Next crash index, cycling from 0-9 to avoid excessive writing of
-!  snapshots to the hard disc.
-!
-        icrash=icrash+1
-        icrash=mod(icrash,10)
-
-      endif
-!
-    endsubroutine output_crash_files
-!***********************************************************************
     subroutine set_dyndiff_coeff(f)
 !
 !  Set dynamical diffusion coefficients.
@@ -2096,6 +2052,115 @@ module Equ
       endif
 
     endsubroutine set_dt1_max
+!***********************************************************************
+    subroutine drop_diagnostic_controls(lsnap_time)
+
+      use General, only: loptest
+      use Hydro, only: hydro_drop_diagnostic_controls
+      use Training, only: training_drop_diagnostic_controls
+
+      logical, optional :: lsnap_time
+!
+!  Saves the diagnostic controls as they are now at the current time
+!  so the helper thread can read them later when it wakes up
+!
+!  25-aug-23/TP: Coded
+!  19-march-25/TP: moved from Equ to here
+!
+      if (loptest(lsnap_time)) then
+        t_snap_save = t
+        return
+      endif
+
+      t_save  = t
+      l1davgfirst_save = l1davgfirst
+      ldiagnos_save = ldiagnos
+      l1dphiavg_save = l1dphiavg
+      l2davgfirst_save = l2davgfirst
+
+      lout_save = lout
+      l1davg_save = l1davg
+      l2davg_save = l2davg
+      lout_sound_save = lout_sound
+      lvideo_save = lvideo
+      delta_y_save = delta_y
+!
+!  Record times for diagnostic and 2d average output.
+!
+      if (l1davgfirst) t1ddiagnos_save=real(t) ! (1-D averages are for THIS time)
+      if (l2davgfirst) t2davgfirst_save=real(t) ! (2-D averages are for THIS time)
+      if (lvideo     ) tslice_save=real(t) ! (slices are for THIS time)
+      if (lout_sound ) tsound_save=real(t)
+!     NOTE: tspec_save is set in powersnap
+      if (ldiagnos) then
+        dt_save = dt
+        it_save = it
+        eps_rkf_save = eps_rkf
+      endif
+      lpencil_save = lpencil
+
+      scl_factor_target_save = scl_factor_target
+      Hp_target_save = Hp_target
+      appa_target_save = appa_target
+
+!$    call hydro_drop_diagnostic_controls
+!$    call training_drop_diagnostic_controls
+
+    endsubroutine drop_diagnostic_controls
+!***********************************************************************
+    subroutine fetch_diagnostic_controls(lsnap_time)
+
+    use General, only: loptest
+    use Hydro, only: hydro_fetch_diagnostic_controls
+    use Training, only: training_fetch_diagnostic_controls
+
+    logical, optional :: lsnap_time
+!
+!   Restores the diagnostics flags that were saved by master when it asked for diagnostics.
+!
+!   13-nov-23/TP: Written
+!   19-march-25/TP: moved from Equ to here
+!
+    if (loptest(lsnap_time)) then
+      t = t_snap_save
+      return
+    endif
+
+    l1davgfirst = l1davgfirst_save
+    ldiagnos = ldiagnos_save
+    l1dphiavg = l1dphiavg_save
+    l2davgfirst = l2davgfirst_save
+
+    lout = lout_save
+    l1davg = l1davg_save
+    l2davg = l2davg_save
+    lout_sound = lout_sound_save
+    lvideo = lvideo_save
+    !TP: for mulithreading it is always the first substep
+    lvideo_first = lvideo_save
+    t1ddiagnos = t1ddiagnos_save
+    t2davgfirst= t2davgfirst_save
+    tslice = tslice_save
+    tsound = tsound_save
+    t = t_save
+    delta_y = delta_y_save
+
+    scl_factor_target   = scl_factor_target_save
+    Hp_target   = Hp_target_save
+    appa_target = appa_target_save
+
+    tdiagnos  = real(t_save)
+    dtdiagnos = dt_save
+    itdiagnos = it_save
+    eps_rkf_diagnos = eps_rkf_save
+
+    tspec = real(tspec_save)
+    lpencil = lpencil_save
+
+!$  call hydro_fetch_diagnostic_controls
+!$  call training_fetch_diagnostic_controls
+
+    endsubroutine fetch_diagnostic_controls
 !***********************************************************************
     subroutine test_rhs_gpu(f,p,mass_per_proc,early_finalize,cpu_version)
 !
