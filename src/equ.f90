@@ -575,8 +575,6 @@ module Equ
 !$      if (ldiagnos .and. allocated(fname)) then
 !$        do imn=1,size(fname)
 !$          if (allocated(inds_max_diags)) then
-!$            if (any(inds_max_diags == imn) .and. &
-!$                (fname(imn) /= 0. .or. (itype_name(imn)==ilabel_max_neg))) then  !MR: Why these questions?
 !$              if (fname(imn)>p_fname(imn)) then
 !$                p_fname(imn) = fname(imn)
 !$                p_fname_keep(imn) = fname_keep(imn)
