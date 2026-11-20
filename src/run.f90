@@ -59,8 +59,8 @@ contains
 subroutine helper_loop(f)
 !
   use Boundcond, only: update_ghosts
-  use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries
-  use Diagnostics, only:  fetch_diagnostic_controls,allocate_fnames
+  use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries,fetch_diagnostic_controls
+  use Diagnostics, only: allocate_fnames
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
   use Power_spectrum, only: wsnap_UETCs
@@ -167,7 +167,7 @@ endsubroutine helper_loop
     use Driver,      only: initialize_driver
     use Diagnostics, only: report_undefined_diagnostics,diagnostics_clean_up
     use Particles_main,   only: particles_rprint_list, particles_initialize_modules
-!$ use General, only: signal_wait, signal_send
+!$  use General, only: signal_send
 
     real, contiguous, dimension(:,:,:,:) :: f
     logical :: lreload_file, lreload_always_file
@@ -239,7 +239,7 @@ endsubroutine helper_loop
 !  01-Apr-25/Madeline: coded (originally inlined in run.f90)
 !
     use Boundcond, only: update_ghosts
-    use Diagnostics, only: drop_diagnostic_controls
+    use Equ, only: drop_diagnostic_controls
     use GPU, only: copy_farray_from_GPU
     use Messages, only: fatal_error
     use Power_spectrum, only: wsnap_UETCs
@@ -465,7 +465,7 @@ endsubroutine helper_loop
 !    Similarly we setup similar dependencies between outputs of substeps here so there is always an initial value
 !    for these kinds of dependencies.
 !
-  if (lgpu) call gpu_prepare_for_first_substep()
+  if (lgpu) call gpu_prepare_for_first_substep
 
   Time_loop: do while (icount<nt)
 !
@@ -626,6 +626,12 @@ endsubroutine helper_loop
     else
       call powersnap_prepare
     endif
+!
+!  Write crash snapshots to the hard disc if the time-step is very low.
+!  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
+!  this to be done.
+!
+      if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
 !  Possibility of logspacing for time series output
 !
@@ -1479,7 +1485,7 @@ endsubroutine helper_loop
   call check_for_cmd_arguments
 !$ call get_all_core_ids
 
-!  Here we start a paralle section with 2 threads so we can split them into the
+!  Here we start a parallel section with 2 threads so we can split them into the
 !  master and helper thread later on.
 !$omp parallel num_threads(num_helper_masters+1) &
 !$omp copyin(dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
@@ -1624,6 +1630,41 @@ endsubroutine helper_loop
   call finalize
 !
   endsubroutine run_start
+!***********************************************************************
+  subroutine output_crash_files(f)
+!
+!  Write crash snapshots when time-step is low.
+!
+!  15-aug-2007/anders: coded
+!
+    use Snapshot, only: wsnap
+!
+    real, contiguous, dimension(:,:,:,:) :: f
+!
+    integer, save :: icrash=0
+    character (len=10) :: filename
+    character (len=1) :: icrash_string
+!
+    if ( it>1 .and. dt<=crash_file_dtmin_factor*dtmin ) then
+
+      write(icrash_string, fmt='(i1)') icrash
+      filename='crash'//icrash_string//'.dat'
+      call wsnap(filename,f,mvar_io,ENUM=.false.)
+      if (lroot) then
+        print*, 'Time-step is very low - writing '//trim(filename)
+        print*, '(it, itsub=', it, itsub, ')'
+        print*, '(t, dt=', t, dt, ')'
+      endif
+!
+!  Next crash index, cycling from 0-9 to avoid excessive writing of
+!  snapshots to the hard disc.
+!
+      icrash=icrash+1
+      icrash=mod(icrash,10)
+
+    endif
+!
+    endsubroutine output_crash_files
 !***********************************************************************
 endmodule Run_module
 !***********************************************************************

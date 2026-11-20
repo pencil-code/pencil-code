@@ -81,7 +81,7 @@ module Snapshot
 !
       use General, only: safe_character_assign
       use Sub, only: read_snaptime, update_snaptime
-      use Diagnostics, only: drop_diagnostic_controls
+      use Equ, only: drop_diagnostic_controls
 !
       real, dimension (:,:,:,:) :: a
 !
@@ -107,7 +107,7 @@ module Snapshot
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
           extpars%csnap_nr=ch
-          call drop_diagnostic_controls(lsnap_time=.true.)
+!$        call drop_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
           call perform_wsnap_down(a,ch)
@@ -319,7 +319,7 @@ module Snapshot
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
       use Chemistry, only: make_flame_index, make_mixture_fraction
-      use Diagnostics, only: drop_diagnostic_controls
+      use Equ, only: drop_diagnostic_controls
       use General, only: itoa
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
@@ -395,7 +395,7 @@ module Snapshot
           call safe_character_assign(file,trim(chsnap)//ch)
           if (lmultithread) then
             call add_snap_to_queue(nv1_capitalvar, msnap, file)
-            call drop_diagnostic_controls(lsnap_time=.true.)
+!$          call drop_diagnostic_controls(lsnap_time=.true.)
 !$          lmasterflags(PERF_WSNAP) = .true.
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
@@ -413,7 +413,7 @@ module Snapshot
         if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(a)
         !If multithreading we update ghosts on the helper
         !so no need to update ghosts here
-        if (.not. lmultithread) then
+        if (.not. lmultithread.or.chsnap(1:5)=='crash') then  !MR: tb improved: let helper write crash.dat
           if (msnap==mfarray) then
             if (.not. loptest(noghost)) call update_ghosts(a)
             call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -422,7 +422,7 @@ module Snapshot
           if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         endif
         call safe_character_assign(file,trim(chsnap))
-        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
+        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap(1:5)=='crash' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
           if(.not.lcollective_IO.or. (IO_strategy=="io_collect_xy".and.lfirst_proc_xy) .or.lroot) then
             tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
             base_file = trim(directory_snap)//'/'//trim(tmpfile)
@@ -440,7 +440,7 @@ module Snapshot
         endif
         if (lmultithread.and.nt>0) then
           call add_snap_to_queue(1, msnap, file)
-          call drop_diagnostic_controls(lsnap_time=.true.)
+!$        call drop_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_WSNAP) = .true.
         else
           call perform_wsnap(a,1,msnap,file)
@@ -949,7 +949,7 @@ module Snapshot
       use Boundcond, only: update_ghosts
       use Power_spectrum, only: powerhel
       use Sub, only: update_snaptime
-      use Diagnostics, only: drop_diagnostic_controls
+      use Equ, only: drop_diagnostic_controls
       use General, only: loptest
 !
       real, contiguous, dimension(:,:,:,:) :: f
@@ -988,7 +988,7 @@ module Snapshot
 !
           tspec_save=t
           if (lgpu) tspec_save=t_farray_copy
-          call drop_diagnostic_controls(lsnap_time=.true.)
+!$        call drop_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)
