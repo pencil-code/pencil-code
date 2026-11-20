@@ -956,7 +956,7 @@ module Snapshot
       logical, optional :: lwrite_only
 !
       logical :: llwrite_only,ldo_all,lfirstcall_powerhel
-      real, dimension(2) :: sumspec
+      !real, dimension(2) :: sumspec
 !
 !  Set llwrite_only.
 !
