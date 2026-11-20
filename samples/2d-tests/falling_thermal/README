@@ -14,5 +14,10 @@ Comments:
     A cool blob of material falling in a stratified background. Gravity points
     in the direction of increasing z. Stratification is controlled by cs0.
     This sample tests using a cylindrical grid that extends up to r=0.
+    
+    (20-Nov-2026) checked that the sample is independent of the compiler optimization level:
+    - `pc_auto-test -C --config-files=GNU-GCC_MPI,GNU-GCC_optimal .`
+    - `pc_auto-test -C --config-files=GNU-GCC_MPI,GNU-GCC_debug .`
+    both pass.
 References:
     
