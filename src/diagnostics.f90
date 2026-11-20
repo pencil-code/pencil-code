@@ -615,9 +615,9 @@ contains
 !  then increasing teh field width.
 !
         integer, intent(IN) :: iname
-        character(len=32)   :: form
+        character(len=fmtlen) :: form
 
-        character(len=32)   :: tail
+        character(len=fmtlen) :: tail
         integer             :: index_i,index_d,index_c
         integer             :: dlength,flength,mlength,nlength
 
