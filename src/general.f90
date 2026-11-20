@@ -6653,7 +6653,7 @@ iloop:do i=1,size(list2)
 
       integer(KIND=ikind8) :: ind,resid
 
-      ind = int(rindex); resid=ind
+      ind = int(rindex,8); resid=ind
       if (present(rank)) resid = modulo(ind,nw)
       indx = int(modulo(resid,int(nx,kind=ikind8)))
       indy = int(modulo(resid/nx,int(ny,kind=ikind8)))
