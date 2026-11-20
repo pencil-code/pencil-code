@@ -575,10 +575,9 @@ module Equ
 !$      if (ldiagnos .and. allocated(fname)) then
 !$        do imn=1,size(fname)
 !$          if (allocated(inds_max_diags)) then
-!$              if (fname(imn)>p_fname(imn)) then
-!$                p_fname(imn) = fname(imn)
-!$                p_fname_keep(imn) = fname_keep(imn)
-!$              endif
+!$            if (fname(imn)>p_fname(imn)) then
+!$              p_fname(imn) = fname(imn)
+!$              p_fname_keep(imn) = fname_keep(imn)
 !$            endif
 !$          endif
 !$          if (allocated(inds_sum_diags)) then
