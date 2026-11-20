@@ -2,7 +2,14 @@ module Diagnostics_methods
 
 use Cdata
 
-public
+public :: drop_diagnostic_controls, fetch_diagnostic_controls
+private
+
+!
+! variables for communication between threads
+!
+  real ::  dt_save,eps_rkf_save
+  integer :: it_save
 
 contains
 !***********************************************************************
