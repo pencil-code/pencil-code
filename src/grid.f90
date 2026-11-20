@@ -103,7 +103,7 @@ module Grid
       real :: a,b,c
       integer :: i
 !
-      lequidist=(grid_func=='linear')
+      lequidist=(grid_func=='linear'.or.grid_func=='cyl_offset')
 !
 !  Abbreviations
 !
