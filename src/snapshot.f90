@@ -320,7 +320,7 @@ module Snapshot
       use Mpicomm, only: mpibarrier
       use Chemistry, only: make_flame_index, make_mixture_fraction
       use Diagnostics_methods, only: drop_diagnostic_controls
-      use General, only: itoa
+      use General, only: itoa, has_prefix => string_has_prefix
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -413,7 +413,7 @@ module Snapshot
         if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(a)
         !If multithreading we update ghosts on the helper
         !so no need to update ghosts here
-        if (.not. lmultithread.or.chsnap(1:5)=='crash') then  !MR: tb improved: let helper write crash.dat
+        if (.not. lmultithread.or.has_prefix(chsnap,'crash')) then  !MR: tb improved: let helper write crash.dat
           if (msnap==mfarray) then
             if (.not. loptest(noghost)) call update_ghosts(a)
             call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -422,7 +422,9 @@ module Snapshot
           if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         endif
         call safe_character_assign(file,trim(chsnap))
-        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap(1:5)=='crash' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
+        if (lbackup_snap .and. .not.lstart .and. .not.(has_prefix(chsnap,'crash') &
+          .or. has_prefix(chsnap,'d') .or. has_prefix(chsnap,'VAR'))) then
+!
           if(.not.lcollective_IO.or. (IO_strategy=="io_collect_xy".and.lfirst_proc_xy) .or.lroot) then
             tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
             base_file = trim(directory_snap)//'/'//trim(tmpfile)
