@@ -345,9 +345,10 @@ module Diagnostics
         call save_name(one_real*(itdiagnos-1),idiag_it)
 !
 !  Whenever itype_name=ilabel_max_dt, scale result by dt (for printing Courant time).
+!  For extrema with location request, the location index is encoded in itype_name: use the base label.
 !
         do iname=1,nname
-          if (itype_name(iname)==ilabel_max_dt) fname(iname)=dtdiagnos*fname(iname)
+          if (mod(itype_name(iname),ilabel_extr_lim)==ilabel_max_dt) fname(iname)=dtdiagnos*fname(iname)
         enddo
 
         call gen_form_legend(fform,legend)

@@ -1246,7 +1246,7 @@ module Equ
 !  Diagnostics showing how close to advective and diffusive time steps we are
 !
         if (lupdate_courant_dt.and.(.not.ldt_paronly).and.ldiagnos) then
-          if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+          if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.,iname_loc=idiag_dtvloc)
           if (idiag_dtsrc/=0) call max_mn_name(maxsrc/cdtsrc,idiag_dtsrc,l_dt=.true.)
           if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
           if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
