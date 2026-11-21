@@ -964,6 +964,9 @@ module Grid
       elseif (trim(coord_system)=='Lobachevskii') then
         call fatal_error('set_coorsys_dimmask', &
                          'Lobachevskii ccordinates not implemented')
+      else
+        call fatal_error('set_coorsys_dimmask', &
+          'unknown coordinate system '//trim(coord_system))
       endif
 !
 !  Initialize dimensionality mask.
