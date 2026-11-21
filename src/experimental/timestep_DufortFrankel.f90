@@ -75,13 +75,13 @@ module Timestep
 diffarr=1.
 !
       do m=m1,m2
-        if (coord_system=='cartesian') then
+        if (lcartesian_coords) then
           d2o=-2.*(dx_1(l1:l2)**2+dy_1(m)**2)
           d2n=dx_1(l1:l2)**2
           d2s=dx_1(l1:l2)**2
           d2e=dy_1(m)**2
           d2w=dy_1(m)**2
-        elseif (coord_system=='spherical') then
+        elseif (lspherical_coords) then
           d2o=-2.*dx_1(l1:l2)**2-2.*r2_mn*dy_1(m)**2-r2_mn*sin2th(m)
           d2n=dx_1(l1:l2)**2+r1_mn*dx_1(l1:l2)
           d2s=dx_1(l1:l2)**2-r1_mn*dx_1(l1:l2)
