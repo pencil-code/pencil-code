@@ -950,7 +950,7 @@ module Energy
 ! FbotKbot is required here for boundcond
 !
       elseif (lgravx) then
-        if ((coord_system=='spherical'.or.lconvection_gravx).and.(.not.lread_hcond)) then
+        if ((lspherical_coords.or.lconvection_gravx).and.(.not.lread_hcond)) then
           if (iheatcond(1)=='K-const') then
             hcondxbot=hcond0
             hcondxtop=hcond0
@@ -1516,7 +1516,7 @@ module Energy
         endif
 
         if (lread_hcond) then
-          if (coord_system=='spherical' .or. lconvection_gravx) then   ! .or. lgravx ?
+          if (lspherical_coords .or. lconvection_gravx) then   ! .or. lgravx ?
             call read_hcond(nx,nxgrid,ipx,hcondxtop,hcondxbot)   ! no scaling by hcond0!
           elseif (lgravz) then
             call read_hcond(nz,nzgrid,ipz,hcondztop,hcondzbot)   ! no scaling by hcond0!
