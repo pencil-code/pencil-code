@@ -1570,15 +1570,15 @@ module PointMasses
 !
       x0=fq(ks,ixq);y0=fq(ks,iyq);z0=fq(ks,izq)
 !
-      if (coord_system=='cartesian') then
+      if (lcartesian_coords) then
         gg(:,1) = (x   -x0)*grr
         gg(:,2) = (y(m)-y0)*grr
         gg(:,3) = (z(n)-z0)*grr
-      elseif (coord_system=='cylindric') then
+      elseif (lcylindrical_coords) then
         gg(:,1) = (x   -x0*cos(y(m)-y0))*grr
         gg(:,2) =       x0*sin(y(m)-y0) *grr
         gg(:,3) = (z(n)-z0             )*grr
-      elseif (coord_system=='spherical') then
+      elseif (lspherical_coords) then
         gg(:,1) = (x-x0*sinth(m)*sin(y0)*cos(z(n)-z0))*grr
         gg(:,2) = (x0*(sinth(m)*cos(y0)-costh(m)*sin(y0)*cos(z(n)-z0)))*grr
         gg(:,3) = (x0*sin(y0)*sin(z(n)-z0))*grr
@@ -1966,15 +1966,15 @@ module PointMasses
 !      
       mloop: do m=m1,m2
       nloop: do n=n1,n2
-        if (coord_system=='cartesian') then
+        if (lcartesian_coords) then
           dist(:,1)=x(l1:l2)-xxpar(1)
           dist(:,2)=y(  m  )-xxpar(2)
           dist(:,3)=z(  n  )-xxpar(3)
-        elseif (coord_system=='cylindric') then
+        elseif (lcylindrical_coords) then
           dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
           dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
           dist(:,3)=z(  n  )-xxpar(3)
-        elseif (coord_system=='spherical') then
+        elseif (lspherical_coords) then
           call not_implemented('correct_gasgravity_integrate','for spherical polars')
         else
           call fatal_error('correct_gasgravity_integrate','no such coord_system: '// &
@@ -2248,17 +2248,17 @@ module PointMasses
            "No gas or dust gravity to add."//achar(10)// &
            "Switch on lgas_gravity or ldust_gravity in n-body parameters")
 !
-      if (coord_system=='cartesian') then      
+      if (lcartesian_coords) then      
         dist(:,1)=x(l1:l2)-xxpar(1)
         dist(:,2)=y(  m  )-xxpar(2)
         dist(:,3)=z(  n  )-xxpar(3)
-      elseif (coord_system=='cylindric') then
+      elseif (lcylindrical_coords) then
         !re = r-rp
         !rp = rp*cos(phip-phi) \hat{r} + rp*sin(phi-phi) \hat{phi}
         dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
         dist(:,2)=         xxpar(1)*sin(y(m)-xxpar(2))
         dist(:,3)=z(  n  )-xxpar(3)
-      elseif (coord_system=='spherical') then
+      elseif (lspherical_coords) then
         call not_implemented('integrate_gasgravity','for spherical polars')
       else
         call fatal_error('integrate_gasgravity','wrong coord_system')
