@@ -912,7 +912,7 @@ module Grid
 !  Fargo (orbital advection acceleration) is implemented for polar coordinates only.
 !  Die otherwise.
 !
-      if (lfargo_advection.and.coord_system=='cartesian') then
+      if (lfargo_advection.and.lcartesian_coords) then
         if (lroot) then
           print*,""
           print*,"Fargo advection is only implemented for"
