@@ -590,15 +590,15 @@ module Gravity
 !
 !  remove this if you are sure rr is already calculated elsewhere
 !
-      if     (coord_system=='cartesian') then
+      if     (lcartesian_coords) then
         do n=n1,n2; do m=m1,m2
           rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
         enddo; enddo
-      elseif (coord_system=='cylindric') then
+      elseif (lcylindrical_coords) then
         do n=n1,n2; do m=m1,m2
           rr(l1:l2,m,n)=sqrt(x(l1:l2)**2+z(n)**2)
         enddo; enddo
-      elseif (coord_system=='spherical') then
+      elseif (lspherical_coords) then
         do n=n1,n2; do m=m1,m2
           rr(l1:l2,m,n)=x(l1:l2)
         enddo; enddo
@@ -923,17 +923,17 @@ module Gravity
       real, dimension(nx,3),intent(out) :: gg_mn
       real, dimension(nx,3) :: ggp
 !
-      if (coord_system=='cartesian') then
+      if (lcartesian_coords) then
         gg_mn(:,1) = x(l1:l2)/rr_mn*gr
         gg_mn(:,2) = y(  m  )/rr_mn*gr
         gg_mn(:,3) = z(  n  )/rr_mn*gr
         if (lcylindrical_gravity) gg_mn(:,3)=0.
-      elseif (coord_system=='cylindric') then
+      elseif (lcylindrical_coords) then
         gg_mn(:,1) = x(l1:l2)/rr_mn*gr
         gg_mn(:,2) = 0.
         gg_mn(:,3) = z(  n  )/rr_mn*gr
         if (lcylindrical_gravity) gg_mn(:,3)=0.
-      elseif (coord_system=='spherical') then
+      elseif (lspherical_coords) then
         gg_mn(:,2)=0.
         gg_mn(:,3)=0.
         if (lcylindrical_gravity) then
