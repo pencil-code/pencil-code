@@ -1382,17 +1382,17 @@ module Particles_nbody
            "No gas gravity or dust gravity to add. "//&
            "Switch on lgas_gravity or ldust_gravity in n-body parameters")
 !
-      if (coord_system=='cartesian') then
+      if (lcartesian_coords) then
         jac=1.;dqx=dx;dqy=dy;dqz=dz
         dist(:,1)=x(l1:l2)-xxpar(1)
         dist(:,2)=y(  m  )-xxpar(2)
         dist(:,3)=z(  n  )-xxpar(3)
-      elseif (coord_system=='cylindric') then
+      elseif (lcylindrical_coords) then
         jac=x(l1:l2);dqx=dx;dqy=x(l1:l2)*dy;dqz=dz
         dist(:,1)=x(l1:l2)-xxpar(1)*cos(y(m)-xxpar(2))
         dist(:,2)=         xxpar(2)*sin(y(m)-xxpar(2))
         dist(:,3)=z(  n  )-xxpar(3)
-      elseif (coord_system=='spherical') then
+      elseif (lspherical_coords) then
         call fatal_error('integrate_selfgravity', &
             ' not yet implemented for spherical polars')
         dqx=0.;dqy=0.;dqz=0.
@@ -1624,15 +1624,15 @@ module Particles_nbody
 !
       x0=fsp(ks,ixp);y0=fsp(ks,iyp);z0=fsp(ks,izp)
 !
-      if (coord_system=='cartesian') then
+      if (lcartesian_coords) then
         gg(:,1) = (x   -x0)*grr
         gg(:,2) = (y(m)-y0)*grr
         gg(:,3) = (z(n)-z0)*grr
-      elseif (coord_system=='cylindric') then
+      elseif (lcylindrical_coords) then
         gg(:,1) = (x   -x0*cos(y(m)-y0))*grr
         gg(:,2) =       x0*sin(y(m)-y0) *grr
         gg(:,3) = (z(n)-z0             )*grr
-      elseif (coord_system=='spherical') then
+      elseif (lspherical_coords) then
         gg(:,1)  = (x-x0*sinth(m)*sin(y0)*cos(z(n)-z0))*grr
         gg(:,2)  = (x0*(sinth(m)*cos(y0)-&
              costh(m)*sin(y0)*cos(z(n)-z0)))*grr
