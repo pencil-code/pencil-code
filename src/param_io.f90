@@ -407,7 +407,7 @@ module Param_IO
       call stop_it_if_any (.false., '')
       lparam_nml = .false.
 
-      if (lyinyang.and.coord_system/='spherical'.and.coord_system/='spherical_coords') then
+      if (lyinyang.and.(.not.lcylindrical_coords).and.(.not.lspherical_coords)) then
         if (lroot) call warning('read_all_init_pars', 'Yin-Yang grid only implemented for spherical coordinates')
         lyinyang=.false.
       endif
