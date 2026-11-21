@@ -81,7 +81,7 @@ module Poisson
 !
       integer :: i
 !
-      if (coord_system/='cylindric') then
+      if (.not.lcylindrical_coords) then
         if (lroot) print*, 'poisson_cyl: '//&
              'this module is only for cylindrical runs'
         call fatal_error('initialize_poisson','')
