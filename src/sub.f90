@@ -6939,24 +6939,24 @@ nameloop: do
 !  Calculate the coordinate-free distance relative to the position (e1,e2,e3).
 !
       if (lorigin) then
-        if (coord_system=='cartesian') then
+        if (lcartesian_coords) then
           rcylmn=sqrt(xc**2+y(m)**2)+tini
           rrmn  =sqrt(    rcylmn**2 +z(n)**2)
-        elseif (coord_system=='cylindric') then
+        elseif (lcylindrical_coords) then
           rcylmn= xc                      +tini
           rrmn  =sqrt(  rcylmn**2+z(n)**2)
-        elseif (coord_system=='spherical') then
+        elseif (lspherical_coords) then
           rcylmn=     xc*sinth(m)+tini
           rrmn  =     xc         +tini
         endif
       else
-        if (coord_system=='cartesian') then
+        if (lcartesian_coords) then
           rcylmn=sqrt((xc-e1)**2+(y(m)-e2)**2)+tini
           rrmn  =sqrt(       rcylmn**2+(z(n)-e3)**2)
-        elseif (coord_system=='cylindric') then
+        elseif (lcylindrical_coords) then
           rcylmn=sqrt(xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2))+tini
           rrmn  =sqrt(rcylmn**2+(z(n)-e3)**2)
-        elseif (coord_system=='spherical') then
+        elseif (lspherical_coords) then
           rcylmn=sqrt((xc*sinth(m))**2 + (e1*sin(e2))**2 - &
                2*xc*e1*costh(m)*cos(e2))+tini
           rrmn  =sqrt(xc**2 + e1**2 - 2*xc*e1*&
