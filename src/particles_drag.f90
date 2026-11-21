@@ -83,7 +83,7 @@ module Particles_drag
 !
 !  Sanity checks.
 !
-      if (coord_system /= 'cartesian' .and. Omega /= 0.0) &
+      if ((.not.lcartesian_coords) .and. Omega /= 0.0) &
           call fatal_error('initialize_particles_drag', 'non-inertial curvilinear system is not implemented. ')
       if (ldrag_on_gas .and. iuu == 0) call fatal_error('initialize_particles_drag', 'drag on gas requires uu. ')
 !
