@@ -4923,7 +4923,7 @@ module Initcond
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'phi_comp_over_r: set variable to zero; i=',i
       else
-        if (coord_system=='cylindric') then
+        if (lcylindrical_coords) then
           print*,'phi_comp_over_r: set Bphi ~ 1/r ; i=',i
         else
           print*,'phi_comp_over_r: set By ~ 1/x ; i=',i
