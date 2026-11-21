@@ -488,7 +488,7 @@ module Energy
           else
             lmultilayer=.false.  ! to ensure that hcond=cte
             TT_ext=T0            ! T0 defined in start.in for geodynamo
-            if (coord_system=='spherical')then
+            if (lspherical_coords) then
               r_ext=x(l2)
               r_int=x(l1)
             else
