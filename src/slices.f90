@@ -431,7 +431,7 @@ contains
 !
       lwrite_slice_r = (r_rslice>0.) .and. (nth_rslice>0) .and. (nph_rslice>0)
       if (lwrite_slice_r) then
-        if (coord_system/='cartesian') then
+        if (.not.lcartesian_coords) then
           call warning('setup_slices','r-slices only meaningful in Cartesian runs')
           lwrite_slice_r=.false.
         elseif (r_rslice>min(xyz1(1),-xyz0(1)) .or. r_rslice>min(xyz1(2),-xyz0(2)) &
