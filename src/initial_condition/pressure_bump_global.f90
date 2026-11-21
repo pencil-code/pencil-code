@@ -191,10 +191,9 @@ module InitialCondition
               endif
             enddo
           else
-            if ( (coord_system=='cylindric')  .or.&
-                 (coord_system=='cartesian')) then
+            if (lcylindrical_coords.or.lcartesian_coords) then
               OO=sqrt(max(-g_r/rr_cyl,0.))
-            else if (coord_system=='spherical') then
+            else if (lspherical_coords) then
               OO=sqrt(max(-g_r/rr_sph,0.))
             endif
           endif
@@ -216,15 +215,15 @@ module InitialCondition
 !
         endif
 !
-        if (coord_system=='cartesian') then
+        if (lcartesian_coords) then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-        elseif (coord_system=='cylindric') then
+        elseif (lcylindrical_coords) then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-        elseif (coord_system=='spherical') then
+        elseif (lspherical_coords) then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 0.
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + OO*rr_sph
