@@ -519,6 +519,27 @@ module Driver
         call interpolate_time_2D (time, data_yz(f_index))
       endif
 !
+      if (ldrive_vol_xy(f_index)) then
+        ! check if driver data needs to be updated from file
+        call update_frame (time, data_vol_xy(f_index), f_index, "vol_xy", nx, ny, driver_vol_xy(f_index))
+        ! interpolate driver data in time
+        call interpolate_time_2D (time, data_vol_xy(f_index))
+      endif
+!
+      if (ldrive_vol_xz(f_index)) then
+        ! check if driver data needs to be updated from file
+        call update_frame (time, data_vol_xz(f_index), f_index, "vol_xz", nx, nz, driver_vol_xz(f_index))
+        ! interpolate driver data in time
+        call interpolate_time_2D (time, data_vol_yz(f_index))
+      endif
+!
+      if (ldrive_vol_yz(f_index)) then
+        ! check if driver data needs to be updated from file
+        call update_frame (time, data_vol_yz(f_index), f_index, "vol_yz", ny, nz, driver_vol_yz(f_index))
+        ! interpolate driver data in time
+        call interpolate_time_2D (time, data_vol_yz(f_index))
+      endif
+!
     endsubroutine driver_update
 !***********************************************************************
     subroutine driver_apply(f, df)
