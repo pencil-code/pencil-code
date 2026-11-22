@@ -576,6 +576,27 @@ module Driver
           l = driver_pos_x(f_index) + nghost
           df(l,m1:m2,n1:n2,f_index) = df(l,m1:m2,n1:n2,f_index) - tau_invers * (f(l,m1:m2,n1:n2,f_index) - data_yz(f_index)%frame)
         endif
+!
+        if (ldrive_vol_xy(f_index)) then
+          ! apply driving with xy-plane in full volume
+          do n = n1, n2
+            df(l1:l2,m1:m2,n,f_index) = df(l1:l2,m1:m2,n,f_index) - tau_invers * (f(l1:l2,m1:m2,n,f_index) - data_vol_xy(f_index)%frame)
+          enddo
+        endif
+!
+        if (ldrive_vol_xz(f_index)) then
+          ! apply driving with xz-plane in full volume
+          do m = m1, m2
+            df(l1:l2,m,n1:n2,f_index) = df(l1:l2,m,n1:n2,f_index) - tau_invers * (f(l1:l2,m,n1:n2,f_index) - data_vol_xz(f_index)%frame)
+          enddo
+        endif
+!
+        if (ldrive_vol_yz(f_index)) then
+          ! apply driving with yz-plane in full volume
+          do l = l1, l2
+            df(l,m1:m2,n1:n2,f_index) = df(l,m1:m2,n1:n2,f_index) - tau_invers * (f(l,m1:m2,n1:n2,f_index) - data_vol_yz(f_index)%frame)
+          enddo
+        endif
       enddo
 !
     endsubroutine driver_apply
