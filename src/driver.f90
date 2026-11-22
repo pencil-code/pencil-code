@@ -65,11 +65,11 @@ module Driver
       call svn_id( &
            "$Id$")
 !
-      if (.not.allocated(tau_inv)) then
-        allocate(tau_inv(mcom),target_proc_x(mcom),target_proc_y(mcom),target_proc_z(mcom))
-        allocate(data_xy(mcom),data_xz(mcom),data_yz(mcom))
-        allocate(ldrive_xy(mcom),ldrive_xz(mcom),ldrive_yz(mcom))
-        tau_inv=0.0
+      if (.not. allocated (tau_inv)) then
+        allocate (tau_inv(mcom), target_proc_x(mcom), target_proc_y(mcom), target_proc_z(mcom))
+        allocate (data_xy(mcom), data_xz(mcom), data_yz(mcom))
+        allocate (ldrive_xy(mcom), ldrive_xz(mcom), ldrive_yz(mcom))
+        tau_inv = 0.0
       endif
 !
       target_proc_x = (driver_pos_x(:mcom)-1) / nx
