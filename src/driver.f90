@@ -131,6 +131,12 @@ module Driver
             deallocate (data_yz(f_index)%frame, data_yz(f_index)%frame_l, data_yz(f_index)%frame_r)
       enddo
 !
+      if (allocated (tau_inv)) then
+        deallocate (tau_inv, target_proc_x, target_proc_y, target_proc_z)
+        deallocate (data_xy, data_xz, data_yz)
+        deallocate (ldrive_xy, ldrive_xz, ldrive_yz)
+      endif
+!
     endsubroutine finalize_driver
 !***********************************************************************
     subroutine read_driver_run_pars(iomsg)
