@@ -316,17 +316,18 @@ module Driver
       integer :: buffer_dim_1, buffer_dim_2
       integer :: rec_len, alloc_err
 !
+      if ((plane == "xy") .or. (plane == "vol_xy")) then
+        buffer_dim_1 = dim_1 * nprocx
+        buffer_dim_2 = dim_2 * nprocy
+      elseif ((plane == "xz") .or. (plane == "vol_xz")) then
+        buffer_dim_1 = dim_1 * nprocx
+        buffer_dim_2 = dim_2 * nprocz
+      elseif ((plane == "yz") .or. (plane == "vol_yz")) then
+        buffer_dim_1 = dim_1 * nprocy
+        buffer_dim_2 = dim_2 * nprocz
+      endif
+!
       if (lreader) then
-        if ((plane == "xy") .or. (plane == "vol_xy")) then
-          buffer_dim_1 = dim_1 * nprocx
-          buffer_dim_2 = dim_2 * nprocy
-        elseif ((plane == "xz") .or. (plane == "vol_xz")) then
-          buffer_dim_1 = dim_1 * nprocx
-          buffer_dim_2 = dim_2 * nprocz
-        elseif ((plane == "yz") .or. (plane == "vol_yz")) then
-          buffer_dim_1 = dim_1 * nprocy
-          buffer_dim_2 = dim_2 * nprocz
-        endif
         allocate (buffer(buffer_dim_1,buffer_dim_2), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_frame', 'Could not allocate buffer.', .true.)
 !
@@ -343,6 +344,9 @@ module Driver
           call distribute_xz (data, buffer)
         elseif (plane == "yz") then
           call distribute_yz (data, buffer)
+        elseif ((plane == "vol_xy") .or. (plane == "vol_xz") .or. (plane == "vol_yz")) then
+          call mpibcast (buffer)
+          data = buffer(1:dim_1,1:dim_2)
         endif
         deallocate (buffer)
       else
@@ -353,6 +357,18 @@ module Driver
           call distribute_xz (data)
         elseif (plane == "yz") then
           call distribute_yz (data)
+        elseif ((plane == "vol_xy") .or. (plane == "vol_xz") .or. (plane == "vol_yz")) then
+          allocate (buffer(buffer_dim_1,buffer_dim_2), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('read_frame', 'Could not allocate receive buffer.', .true.)
+          call mpibcast (buffer)
+          if (plane == "vol_xy") then
+            data = buffer(1+dim_1*(ipx-1):dim_1*ipx,1+dim_2*(ipy-1):dim_2*ipy)
+          elseif (plane == "vol_xz") then
+            data = buffer(1+dim_1*(ipx-1):dim_1*ipx,1+dim_2*(ipz-1):dim_2*ipz)
+          elseif (plane == "vol_yz") then
+            data = buffer(1+dim_1*(ipy-1):dim_1*ipy,1+dim_2*(ipz-1):dim_2*ipz)
+          endif
+          deallocate (buffer)
         endif
       endif
 !
@@ -482,6 +498,9 @@ module Driver
           call distribute_yz (frame_pos)
           call distribute_yz (frame_time)
         endif
+      elseif ((plane == "vol_xy") .or. (plane == "vol_xz") .or. (plane == "vol_yz")) then
+        call mpibcast (frame_pos)
+        call mpibcast (frame_time)
       endif
 !
     endsubroutine find_frame
