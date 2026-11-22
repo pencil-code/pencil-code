@@ -238,7 +238,7 @@ module Driver
       real, intent(in) :: time
       type(data_array), intent(inout) :: data
       integer, intent(in) :: f_index
-      character(len=2), intent(in) :: plane
+      character(len=*), intent(in) :: plane
       integer, intent(in) :: dim_1, dim_2
       character (len=fnlen), intent(in) :: driver_file
 !
@@ -253,6 +253,12 @@ module Driver
         lreader = ldrive_xz(f_index) .and. lfirst_proc_xz
       elseif (plane == "yz") then
         lreader = ldrive_yz(f_index) .and. lfirst_proc_yz
+      elseif (plane == "vol_xy") then
+        lreader = ldrive_vol_xy(f_index) .and. lroot
+      elseif (plane == "vol_xz") then
+        lreader = ldrive_vol_xz(f_index) .and. lroot
+      elseif (plane == "vol_yz") then
+        lreader = ldrive_vol_yz(f_index) .and. lroot
       endif
 !
       if (lfirst_call) then
@@ -300,7 +306,7 @@ module Driver
       integer, intent(in) :: frame
       character(len=*), intent(in) :: filename
       integer, intent(in) :: f_index
-      character(len=2), intent(in) :: plane
+      character(len=*), intent(in) :: plane
       integer, intent(in) :: dim_1, dim_2
       real, dimension(dim_1, dim_2), intent(out) :: data
       logical, intent(in) :: lreader
@@ -311,13 +317,13 @@ module Driver
       integer :: rec_len, alloc_err
 !
       if (lreader) then
-        if (plane == "xy") then
+        if ((plane == "xy") .or. (plane == "vol_xy")) then
           buffer_dim_1 = dim_1 * nprocx
           buffer_dim_2 = dim_2 * nprocy
-        elseif (plane == "xz") then
+        elseif ((plane == "xz") .or. (plane == "vol_xz")) then
           buffer_dim_1 = dim_1 * nprocx
           buffer_dim_2 = dim_2 * nprocz
-        elseif (plane == "yz") then
+        elseif ((plane == "yz") .or. (plane == "vol_yz")) then
           buffer_dim_1 = dim_1 * nprocy
           buffer_dim_2 = dim_2 * nprocz
         endif
@@ -379,7 +385,7 @@ module Driver
       integer, intent(out) :: frame_pos
       real, intent(out) :: frame_time
       integer, intent(in) :: f_index
-      character(len=2), intent(in) :: plane
+      character(len=*), intent(in) :: plane
       logical, intent(in) :: lreader
 !
       integer :: out_int, rec_len, io_error
@@ -389,6 +395,9 @@ module Driver
       if ((.not. ldrive_xy(f_index)) .and. (plane == "xy")) return
       if ((.not. ldrive_xz(f_index)) .and. (plane == "xz")) return
       if ((.not. ldrive_yz(f_index)) .and. (plane == "yz")) return
+      if ((.not. ldrive_vol_xy(f_index)) .and. (plane == "vol_xy")) return
+      if ((.not. ldrive_vol_xz(f_index)) .and. (plane == "vol_xz")) return
+      if ((.not. ldrive_vol_yz(f_index)) .and. (plane == "vol_yz")) return
 !
       if (lreader) then
         ! read time and frame number from "_times.dat" file, if it exists
