@@ -34,17 +34,21 @@ module Driver
     real :: time_l, time_r
   end type data_array
   type(data_array), dimension (:), allocatable :: data_xy, data_xz, data_yz
+  type(data_array), dimension (:), allocatable :: data_vol_xy, data_vol_xz, data_vol_yz
   logical, dimension (:), allocatable :: ldrive_xy, ldrive_xz, ldrive_yz
+  logical, dimension (:), allocatable :: ldrive_vol_xy, ldrive_vol_xz, ldrive_vol_yz
 !
 !  Run parameters.
 !
   character (len=fnlen), dimension (mcom_max) :: driver_xy="", driver_xz="", driver_yz=""
+  character (len=fnlen), dimension (mcom_max) :: driver_vol_xy="", driver_vol_xz="", driver_vol_yz=""
   integer, dimension (mcom_max) :: driver_pos_x=0, driver_pos_y=0, driver_pos_z=0
   real, dimension (mcom_max) :: data_unit=0.0, decay_time=0.0, time_offset=0.0
 !
   namelist /driver_run_pars/ &
       driver_xy, driver_xz, driver_yz, &
       driver_pos_x, driver_pos_y, driver_pos_z, &
+      driver_vol_xy, driver_vol_xz, driver_vol_yz, &
       data_unit, decay_time, time_offset
 !
   contains
@@ -59,6 +63,7 @@ module Driver
       use General, only: itoa
 !
       integer :: f_index, alloc_err
+      logical :: ldriving
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -68,7 +73,9 @@ module Driver
       if (.not. allocated (tau_inv)) then
         allocate (tau_inv(mcom), target_proc_x(mcom), target_proc_y(mcom), target_proc_z(mcom))
         allocate (data_xy(mcom), data_xz(mcom), data_yz(mcom))
+        allocate (data_vol_xy(mcom), data_vol_xz(mcom), data_vol_yz(mcom))
         allocate (ldrive_xy(mcom), ldrive_xz(mcom), ldrive_yz(mcom))
+        allocate (ldrive_vol_xy(mcom), ldrive_vol_xz(mcom), ldrive_vol_yz(mcom))
         tau_inv = 0.0
       endif
 !
@@ -82,8 +89,13 @@ module Driver
         ldrive_xy(f_index) = (driver_xy(f_index) /= "") .and. (target_proc_z(f_index) == ipz)
         ldrive_xz(f_index) = (driver_xz(f_index) /= "") .and. (target_proc_y(f_index) == ipy)
         ldrive_yz(f_index) = (driver_yz(f_index) /= "") .and. (target_proc_x(f_index) == ipx)
+        ldrive_vol_xy(f_index) = (driver_vol_xy(f_index) /= "")
+        ldrive_vol_xz(f_index) = (driver_vol_xz(f_index) /= "")
+        ldrive_vol_yz(f_index) = (driver_vol_yz(f_index) /= "")
+        ldriving = ldrive_xy(f_index) .or. ldrive_xz(f_index) .or. ldrive_yz(f_index) &
+            .or. ldrive_vol_xy(f_index) .or. ldrive_vol_xz(f_index) .or. ldrive_vol_yz(f_index)
 !
-        if (ldrive_xy(f_index) .and. (data_unit(f_index) == 0.0)) &
+        if (ldriving .and. (data_unit(f_index) == 0.0)) &
             call fatal_error ('initialize_driver', "Trying to use driving in component "//trim(itoa(f_index))// &
                 " without setting the corresponding 'data_unit'.", .true.)
 !
@@ -112,6 +124,31 @@ module Driver
         endif
       enddo
 !
+        if (ldrive_vol_xy(f_index)) then
+          if (.not. associated (data_vol_xy(f_index)%frame)) then
+            allocate (data_vol_xy(f_index)%frame(nx,ny), data_vol_xy(f_index)%frame_l(nx,ny), &
+                data_vol_xy(f_index)%frame_r(nx,ny), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_vol_xy".', .true.)
+          endif
+        endif
+!
+        if (ldrive_vol_xz(f_index)) then
+          if (.not. associated (data_vol_xz(f_index)%frame)) then
+            allocate (data_vol_xz(f_index)%frame(nx,nz), data_vol_xz(f_index)%frame_l(nx,nz), &
+                data_vol_xz(f_index)%frame_r(nx,nz), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_vol_xz".', .true.)
+          endif
+        endif
+!
+        if (ldrive_vol_yz(f_index)) then
+          if (.not. associated (data_vol_yz(f_index)%frame)) then
+            allocate (data_vol_yz(f_index)%frame(ny,nz), data_vol_yz(f_index)%frame_l(ny,nz), &
+                data_vol_yz(f_index)%frame_r(ny,nz), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_vol_yz".', .true.)
+          endif
+        endif
+      enddo
+!
     endsubroutine initialize_driver
 !***********************************************************************
     subroutine finalize_driver
@@ -129,12 +166,20 @@ module Driver
             deallocate (data_xz(f_index)%frame, data_xz(f_index)%frame_l, data_xz(f_index)%frame_r)
         if (associated (data_yz(f_index)%frame)) &
             deallocate (data_yz(f_index)%frame, data_yz(f_index)%frame_l, data_yz(f_index)%frame_r)
+        if (associated (data_vol_xy(f_index)%frame)) &
+            deallocate (data_vol_xy(f_index)%frame, data_vol_xy(f_index)%frame_l, data_vol_xy(f_index)%frame_r)
+        if (associated (data_vol_xz(f_index)%frame)) &
+            deallocate (data_vol_xz(f_index)%frame, data_vol_xz(f_index)%frame_l, data_vol_xz(f_index)%frame_r)
+        if (associated (data_vol_yz(f_index)%frame)) &
+            deallocate (data_vol_yz(f_index)%frame, data_vol_yz(f_index)%frame_l, data_vol_yz(f_index)%frame_r)
       enddo
 !
       if (allocated (tau_inv)) then
         deallocate (tau_inv, target_proc_x, target_proc_y, target_proc_z)
         deallocate (data_xy, data_xz, data_yz)
+        deallocate (data_vol_xy, data_vol_xz, data_vol_yz)
         deallocate (ldrive_xy, ldrive_xz, ldrive_yz)
+        deallocate (ldrive_vol_xy, ldrive_vol_xz, ldrive_vol_yz)
       endif
 !
     endsubroutine finalize_driver
