@@ -122,7 +122,6 @@ module Driver
             if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_yz".', .true.)
           endif
         endif
-      enddo
 !
         if (ldrive_vol_xy(f_index)) then
           if (.not. associated (data_vol_xy(f_index)%frame)) then
