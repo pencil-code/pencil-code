@@ -344,7 +344,7 @@ module Driver
         elseif (plane == "yz") then
           call distribute_yz (data, buffer)
         elseif ((plane == "vol_xy") .or. (plane == "vol_xz") .or. (plane == "vol_yz")) then
-          call mpibcast (buffer)
+          call mpibcast (buffer, (/ buffer_dim_1, buffer_dim_2 /))
           data = buffer(1:dim_1,1:dim_2)
         endif
         deallocate (buffer)
@@ -359,7 +359,7 @@ module Driver
         elseif ((plane == "vol_xy") .or. (plane == "vol_xz") .or. (plane == "vol_yz")) then
           allocate (buffer(buffer_dim_1,buffer_dim_2), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('read_frame', 'Could not allocate receive buffer.', .true.)
-          call mpibcast (buffer)
+          call mpibcast (buffer, (/ buffer_dim_1, buffer_dim_2 /))
           if (plane == "vol_xy") then
             data = buffer(1+dim_1*(ipx-1):dim_1*ipx,1+dim_2*(ipy-1):dim_2*ipy)
           elseif (plane == "vol_xz") then
