@@ -361,11 +361,11 @@ module Driver
           if (alloc_err > 0) call fatal_error ('read_frame', 'Could not allocate receive buffer.', .true.)
           call mpibcast (buffer, (/ buffer_dim_1, buffer_dim_2 /))
           if (plane == "vol_xy") then
-            data = buffer(1+dim_1*(ipx-1):dim_1*ipx,1+dim_2*(ipy-1):dim_2*ipy)
+            data = buffer(1+dim_1*ipx:dim_1*(ipx+1),1+dim_2*ipy:dim_2*(ipy+1))
           elseif (plane == "vol_xz") then
-            data = buffer(1+dim_1*(ipx-1):dim_1*ipx,1+dim_2*(ipz-1):dim_2*ipz)
+            data = buffer(1+dim_1*ipx:dim_1*(ipx+1),1+dim_2*ipz:dim_2*(ipz+1))
           elseif (plane == "vol_yz") then
-            data = buffer(1+dim_1*(ipy-1):dim_1*ipy,1+dim_2*(ipz-1):dim_2*ipz)
+            data = buffer(1+dim_1*ipy:dim_1*(ipy+1),1+dim_2*ipz:dim_2*(ipz+1))
           endif
           deallocate (buffer)
         endif
