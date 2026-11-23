@@ -7575,6 +7575,8 @@ iloop:do i=1,size(list2)
         dst = enum_shearroberts1_string
       case('shearroberts2')
         dst = enum_shearroberts2_string
+      case ('Smith-Hutton')
+        dst = enum_smithZhutton_string
       case('dy74')
         dst = enum_dy74_string
       case('cha61')
