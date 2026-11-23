@@ -20,13 +20,13 @@ private
 
 contains
 !***********************************************************************
-    subroutine drop_diagnostic_controls(lsnap_time)
+    subroutine drop_diagnostic_controls(lsnap_time,lspec_time)
 
       use General, only: loptest
       use Hydro, only: hydro_drop_diagnostic_controls
       use Training, only: training_drop_diagnostic_controls
 
-      logical, optional :: lsnap_time
+      logical, optional :: lsnap_time,lspec_time
 !
 !  Saves the diagnostic controls as they are now at the current time
 !  so the helper thread can read them later when it wakes up
@@ -34,6 +34,11 @@ contains
 !  25-aug-23/TP: Coded
 !  19-march-25/TP: moved from Equ to here
 !
+      if (loptest(lspec_time)) then
+        tspec_save=t
+        if (lgpu) tspec_save=t_farray_copy
+      endif
+
       if (loptest(lsnap_time)) then
         t_snap_save = t
         return

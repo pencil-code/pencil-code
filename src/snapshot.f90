@@ -988,9 +988,7 @@ module Snapshot
 !  (Testing ldiagnostic_output here does not work: it is reset in the later
 !  substeps.)
 !
-          tspec_save=t
-          if (lgpu) tspec_save=t_farray_copy
-!$        call drop_diagnostic_controls(lsnap_time=.true.)
+!$        call drop_diagnostic_controls(lsnap_time=.true.,lspec_time=.true.)
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)
