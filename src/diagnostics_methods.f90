@@ -9,6 +9,13 @@ private
 ! variables for communication between threads
 !
   real ::  dt_save,eps_rkf_save
+  logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
+  logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
+  logical :: lchemistry_diag_save
+  real    :: scl_factor_target_save,Hp_target_save, appa_target_save
+  real    :: delta_y_save
+  real(KIND=rkind8) :: t_save,tspec_save,t_snap_save
+  real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
   integer :: it_save
 
 contains
