@@ -24,7 +24,7 @@ module Initcond
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: acosy
-  public :: sph_constb,tanh_hyperbola,sech2x,coalesce_tubes,coalesce_tubes_pe
+  public :: sph_constb,tanh_hyperbola,sech2x,coalesce_tubes,coalesce_tubes_not_smooth,coalesce_tubes_chi,coalesce_tubes_pe
   public :: gaunoise, gaunoise_lnrho, posnoise, posnoise_rel
   public :: gaunoise_rprof, gaunoise_nolog
   public :: gaussian, gaussian3d, gaussianpos
@@ -8539,8 +8539,116 @@ module Initcond
                       amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * cos(xx)
         By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)
         f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho)) &
-                          +(2*pi/Lx)*(2*pi/Ly)*(1/cs20)*5/8*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
-                          +(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
+                            +(2*pi/Lx)*(2*pi/Ly)*(1/cs20)*5/8*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
+                            +(2*pi/Lx)**2*(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
+      enddo
+    enddo
+
+  end subroutine
+
+!***********************************************************************
+  subroutine coalesce_tubes_not_smooth(amp,f,ix,width,cs20)
+
+!
+!  initial vector potential for coalescing tubes/islands in 2D.
+!  reference: https://doi.org/10.1063/1.3420208 -- Huang and Bhattacharjee 2010
+!
+!  16 Sep 2026/vinay.kumar
+!
+
+    real, contiguous, dimension(:,:,:,:) :: f
+    real, dimension (mx,my) :: By0, By
+    real, intent(in) :: amp, width, cs20
+    integer, intent(in) :: ix
+    real :: xx, yy, width_r
+
+    integer :: m,l
+
+    do m = m1,m2
+      do l = l1,l2
+        xx = x(l)*2*pi/Lx
+        yy = y(m)*2*pi/Ly
+        width_r = width*2*pi/Lx
+
+        f(l,m,:,ix)   = 0.
+        f(l,m,:,ix+1) = 0.
+        f(l,m,:,ix+2) = amp/(2*pi) * cos(yy/2) * sin((xx))
+        By(l,m) = amp/(2*pi)/width_r/cosh(xx/width_r)**2  * cos(yy/2) * sin(xx) + &
+                      amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * cos(xx)
+        By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)
+        f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho)) &
+                          +(2*pi/Lx)*(2*pi/Ly)*(1/cs20)*5/8*(amp/(2*pi)*cos(yy/2)*sin(xx))**2)
+      enddo
+    enddo
+
+  end subroutine
+
+!***********************************************************************
+  subroutine coalesce_tubes_chi(amp,f,ix,width,cs20,chi)
+
+!
+!  initial vector potential for coalescing tubes/islands in 2D.
+!  The temperature follows the same left/right split, with chi giving
+!  the temperature ratio T_right/T_left.
+!
+!  23-jul-26/vk: coded
+!
+    use EquationOfState, only: get_gamma_etc, lnrho0, lnTT0
+
+    real, contiguous, dimension(:,:,:,:) :: f
+    real, dimension (mx,my) :: By0, By
+    real, intent(in) :: amp, width, cs20, chi
+    integer, intent(in) :: ix
+    real :: xx, yy, width_r, gamma, cp, cv, gamma_m1, TT0, tratio, TTlocal
+    real :: rholocal, pplocal
+
+    integer :: m,l
+
+    if (.not.(ltemperature.or.lentropy)) call fatal_error('coalesce_tubes_chi', &
+         'requires ltemperature=T or lentropy=T')
+    if (chi <= 0.) call fatal_error('coalesce_tubes_chi', &
+         'chi must be positive')
+
+    call get_gamma_etc(gamma,cp=cp,cv=cv)
+    gamma_m1=gamma-1.
+    TT0=cs20/(gamma_m1*cp)
+
+    do m = m1,m2
+      do l = l1,l2
+        xx = x(l)*2*pi/Lx
+        yy = y(m)*2*pi/Ly
+        width_r = width*2*pi/Lx
+        tratio = 0.5*(1.0+chi) + 0.5*(chi-1.0)*tanh(xx/width_r)
+        TTlocal = TT0*tratio
+
+        f(l,m,:,ix)   = 0.
+        f(l,m,:,ix+1) = 0.
+        f(l,m,:,ix+2) = amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * sin(xx)
+        By(l,m) = amp/(2*pi)/width_r/cosh(xx/width_r)**2  * cos(yy/2) * sin(xx) + &
+                      amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * cos(xx)
+        By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)
+
+        pplocal = exp(f(l,m,1,ilnrho))*TT0                                  &
+                + (2*pi/Lx)*(2*pi/Ly)*5./8.                                 &
+                  *(amp/(2*pi)*cos(yy/2)*sin(xx))**2                        &
+                + 0.5*(By0(l,m)**2 - By(l,m)**2)
+
+        rholocal = pplocal/TTlocal
+
+        f(l,m,:,ilnrho) = log(rholocal)
+
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            f(l,m,:,iTT) = TTlocal
+          else
+            f(l,m,:,ilnTT) = log(TTlocal)
+          endif
+        elseif (lentropy) then
+          ! Convert the same temperature profile into the entropy variable.
+          f(l,m,:,iss) = cv * (log(TTlocal) - lnTT0 - gamma_m1 * &
+                               (f(l,m,:,ilnrho) - lnrho0))
+        endif 
+
       enddo
     enddo
 
