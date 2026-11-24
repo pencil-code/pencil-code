@@ -168,6 +168,8 @@ module Special
   logical :: lsigE_const_ifnot_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
   logical :: lsigE_const=.false.                   !PAR_DOC: put sigE to a constant if true.
   logical :: lBD_scaling_wHubble=.true.            !PAR_DOC: Bunch-Davies scaling with Hubble (true for backward compatibility, but should be false to be correct)
+  logical :: lBD_box_normalization=.false.  !PAR_DOC: BD amplitude from the box: amplphi=amplee_BD_prefactor=1 give the 3-D vacuum (also in 1-D, 2-D);
+                                            !PAR_DOC: do not combine with lapply_BD_kNy_factor=T, lappy_BD_k1D_factor=T or linv_BD=F
   logical :: lold_lrho_chi_dtconstraint=.true.     !PAR_DOC: old lrho_chi dt constraint (use false for new and correct version)
   logical :: linclude_rhokin_in_a2rho=.false.      !PAR_DOC: include rhokin in a2rho
   logical :: linclude_rho_EB_in_wstate=.false.     !PAR_DOC: include rhoE and rhoB, but not rhokin in wstate
@@ -208,7 +210,8 @@ module Special
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, &
-      lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD, lBD_scaling_wHubble, lHubble_ini_with_a
+      lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD, lBD_scaling_wHubble, lHubble_ini_with_a, &
+      lBD_box_normalization
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -448,6 +451,7 @@ module Special
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD, deriv_prefactor
+      real :: BD_norm, BD_kpow, Vd, Sd
       integer :: j
       real :: lnascale
 !
@@ -545,28 +549,62 @@ module Special
 !
           case ('Bunch-Davies')
             if (lroot) print*,'Hubble_ini=',Hubble_ini
-            if (lBD_scaling_wHubble) then
+!
+!  lBD_box_normalization: vacuum of a 3-D field on a d-dimensional lattice (d=dimensionality).
+!  Per Fourier mode <|f_k|^2> = |u_k|^2 * k^(3-d) * [(2pi)^d/V_d] / (2pi^2 S_d), with V_d the volume
+!  of the active directions and S_d = 2, 2pi, 4pi for d = 1, 2, 3, so that each k shell carries the
+!  3-D power k^2 |u_k|^2/(2pi^2). For d=3 this is 1/sqrt(Lx*Ly*Lz). For phi, u_k=1/(a sqrt(2k)).
+!  This normalization is complete by itself: use it with amplphi=amplee_BD_prefactor=1 and keep the older
+!  amplitude options at their defaults (lapply_BD_kNy_factor=F, lappy_BD_k1D_factor=F, linv_BD=T);
+!  they would rescale the amplitude again (lBD_scaling_wHubble is not used in this branch).
+!
+            if (lBD_box_normalization) then
+              Vd=1.
+              if (nxgrid>1) Vd=Vd*Lx
+              if (nygrid>1) Vd=Vd*Ly
+              if (nzgrid>1) Vd=Vd*Lz
+              Sd=2.*pi**(.5*dimensionality)/gamma(.5*dimensionality)
+              BD_norm=sqrt((2.*pi)**dimensionality/Vd/(2.*pi**2*Sd))
+              BD_kpow=.5*(3-dimensionality)
+              amplphi_BD=amplphi*BD_norm/ascale_ini
+            elseif (lBD_scaling_wHubble) then
               amplphi_BD=amplphi*Hubble_ini
             else
               amplphi_BD=amplphi
             endif
             deriv_prefactor=1.
-            call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
-              amplphi_BD,kpeak_phi,deriv_prefactor, &
-              lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
-              lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD)
+            if (lBD_box_normalization) then
+              call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
+                amplphi_BD,kpeak_phi,deriv_prefactor, &
+                lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
+                lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD, kpow=BD_kpow)
+            else
+              call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
+                amplphi_BD,kpeak_phi,deriv_prefactor, &
+                lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
+                lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD)
+            endif
             if (amplee_BD_prefactor/=0.) then
-              if (lBD_scaling_wHubble) then
+              if (lBD_box_normalization) then
+                amplee_BD=amplee_BD_prefactor*BD_norm
+              elseif (lBD_scaling_wHubble) then
                 amplee_BD=amplee_BD_prefactor*Hubble_ini
               else
                 amplee_BD=amplee_BD_prefactor
               endif
               if (iex>0) then
                 deriv_prefactor=deriv_prefactor_ee
-                call bunch_davies(f,iax,iaz,iex,iez, &
-                  amplee_BD,kpeak_phi,deriv_prefactor, &
-                  lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
-                  lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD)
+                if (lBD_box_normalization) then
+                  call bunch_davies(f,iax,iaz,iex,iez, &
+                    amplee_BD,kpeak_phi,deriv_prefactor, &
+                    lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
+                    lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD, kpow=BD_kpow)
+                else
+                  call bunch_davies(f,iax,iaz,iex,iez, &
+                    amplee_BD,kpeak_phi,deriv_prefactor, &
+                    lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
+                    lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD)
+                endif
               else
                 deriv_prefactor=0.
               endif

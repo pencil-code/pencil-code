@@ -6800,12 +6800,14 @@ module Initcond
     endsubroutine power_randomphase_hel
 !***********************************************************************
     subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor, &
-        lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv,mass,ksteepness)
+        lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv,mass,ksteepness,kpow)
 !
 !  21-mar-25/axel: adapted from power_randomphase_hel
 !  21-may-25/axel: when kpeak<0, interpret is as sharp cutoff; powerlaw otherwise.
 !  12-apr-26/axel: added lappy_BD_k1D_factor, hardwired linv=T (indep of N, F -> scales with N^6 in 3-D)
 !  17-nov-26/TP: optional mass, omega=sqrt(k^2+mass^2) instead of k and optional steepness of the window, default the old 5
+!  23-nov-26/oksana: optional kpow: extra factor k^kpow in the amplitude (kpow=(3-d)/2 gives the 3-D vacuum
+!                    spectrum on a d-dimensional lattice, see lBD_box_normalization in backreact_infl).
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest, roptest
@@ -6818,7 +6820,7 @@ module Initcond
       real :: ampl, ampl_scaled, kpeak, deriv_prefactor, scale_factor=1., steepness
       real :: kNy_x, kNy_y, kNy_z
       logical, optional :: lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv
-      real, optional :: mass, ksteepness
+      real, optional :: mass, ksteepness, kpow
 !
       steepness=roptest(ksteepness,5.)
 !
@@ -6940,6 +6942,10 @@ module Initcond
       do i=1,1+i1b-i1a
         u_re(:,:,:,i)=+ampl_scaled*v_re(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(steepness*(k1/kpeak-1.)))
         u_im(:,:,:,i)=+ampl_scaled*v_im(:,:,:,i)/sqrt(2.*r)*.5*(1.-tanh(steepness*(k1/kpeak-1.)))
+        if (present(kpow)) then
+          u_re(:,:,:,i)=u_re(:,:,:,i)*k1**kpow
+          u_im(:,:,:,i)=u_im(:,:,:,i)*k1**kpow
+        endif
         if (i2a>0) then
           v_re(:,:,:,i)=-r*u_im(:,:,:,i)
           v_im(:,:,:,i)=+r*u_re(:,:,:,i)
