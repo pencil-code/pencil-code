@@ -119,12 +119,12 @@ print*, 'aasmooth=', iaasmooth
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(inout) :: iomsg
+      character(LEN=iomsglen), intent(inout) :: iomsg
 
       integer :: iostat
-      character(LEN=*) :: msg
+      character(LEN=iomsglen) :: msg
 !
-      read(parallel_unit, NML=SGS_hydro_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      read(parallel_unit, NML=SGS_hydro_run_pars, IOSTAT=iostat, IOMSG=msg)
       if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)
 !
     endsubroutine read_SGS_hydro_run_pars

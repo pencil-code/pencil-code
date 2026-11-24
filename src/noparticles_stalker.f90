@@ -55,7 +55,7 @@ module Particles_stalker
 !***********************************************************************
     subroutine read_pstalker_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -71,7 +71,7 @@ module Particles_stalker
 !***********************************************************************
     subroutine read_pstalker_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

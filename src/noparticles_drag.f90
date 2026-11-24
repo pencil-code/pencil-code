@@ -53,7 +53,7 @@ module Particles_drag
 !***********************************************************************
     subroutine read_particles_drag_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -69,7 +69,7 @@ module Particles_drag
 !***********************************************************************
     subroutine read_particles_drag_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

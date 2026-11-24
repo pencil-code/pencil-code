@@ -1594,7 +1594,7 @@ module Particles_sink
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_sink_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1614,7 +1614,7 @@ module Particles_sink
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_sink_run_pars, IOSTAT=iostat, IOMSG=iomsg)

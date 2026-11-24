@@ -121,7 +121,7 @@ module Radiation
 !***********************************************************************
     subroutine read_radiation_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -137,7 +137,7 @@ module Radiation
 !***********************************************************************
     subroutine read_radiation_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

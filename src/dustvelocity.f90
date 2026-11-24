@@ -350,7 +350,7 @@ module Dustvelocity
         adminus(1) = smin
         do j=2,ndustspec+1
            adplus(j-1) = r*adminus(j-1)
-           if(j <= ndustspec) adminus(j)  = adplus(j-1)
+           if (j <= ndustspec) adminus(j)  = adplus(j-1)
         enddo
         mdminus = 4.*pi*rhograin*adminus**3/3.
         mdplus  = 4.*pi*rhograin*adplus**3/3.
@@ -1377,7 +1377,7 @@ module Dustvelocity
         do iix=1,nx
           !TP: rewrote the two conditions separately to eliminate more GPU code
           if (ldustvelocity_shorttausd) then
-            if(tausd1(iix,k)>=shorttaus1limit) then
+            if (tausd1(iix,k)>=shorttaus1limit) then
 !
 !  Short stopping time approximation.
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
@@ -1720,7 +1720,7 @@ module Dustvelocity
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=dustvelocity_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1740,7 +1740,7 @@ module Dustvelocity
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=dustvelocity_run_pars, IOSTAT=iostat, IOMSG=iomsg)

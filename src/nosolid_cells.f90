@@ -112,7 +112,7 @@ module Solid_Cells
 !***********************************************************************
     subroutine read_solid_cells_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -128,7 +128,7 @@ module Solid_Cells
 !***********************************************************************
     subroutine read_solid_cells_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

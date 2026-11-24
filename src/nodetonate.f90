@@ -37,7 +37,7 @@ module Detonate
 !***********************************************************************
     subroutine read_detonate_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

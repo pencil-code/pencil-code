@@ -131,7 +131,7 @@ module Lorenz_gauge
 !***********************************************************************
     subroutine read_lorenz_gauge_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -147,7 +147,7 @@ module Lorenz_gauge
 !***********************************************************************
     subroutine read_lorenz_gauge_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

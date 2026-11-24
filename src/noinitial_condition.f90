@@ -375,7 +375,7 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

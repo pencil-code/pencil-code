@@ -636,7 +636,7 @@ module Particles_stalker
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_stalker_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -656,7 +656,7 @@ module Particles_stalker
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_stalker_run_pars, IOSTAT=iostat, IOMSG=iomsg)

@@ -52,7 +52,7 @@ module Particles_surfspec
 
   subroutine read_particles_surf_init_pars(iomsg)
 !
-    character(LEN=*), intent(out) :: iomsg
+    character(LEN=iomsglen), intent(out) :: iomsg
 
     iomsg=""
   endsubroutine read_particles_surf_init_pars
@@ -70,7 +70,7 @@ module Particles_surfspec
 
   subroutine read_particles_surf_run_pars(iomsg)
 !
-    character(LEN=*), intent(out) :: iomsg
+    character(LEN=iomsglen), intent(out) :: iomsg
 
     iomsg=""
   endsubroutine read_particles_surf_run_pars

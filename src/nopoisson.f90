@@ -93,7 +93,7 @@ module Poisson
 !***********************************************************************
     subroutine read_poisson_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -109,7 +109,7 @@ module Poisson
 !***********************************************************************
     subroutine read_poisson_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

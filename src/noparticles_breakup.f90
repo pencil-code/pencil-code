@@ -29,7 +29,7 @@ contains
     endsubroutine initialize_particles_breakup
 !***********************************************************************
     subroutine read_particles_breakup_init_pars(iomsg)
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       iomsg=""
     endsubroutine read_particles_breakup_init_pars
 !***********************************************************************
@@ -39,7 +39,7 @@ contains
     endsubroutine write_particles_breakup_init_pars
 !***********************************************************************
     subroutine read_particles_breakup_run_pars(iomsg)
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       iomsg=""
     endsubroutine read_particles_breakup_run_pars
 !***********************************************************************

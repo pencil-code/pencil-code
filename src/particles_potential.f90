@@ -757,10 +757,10 @@ endsubroutine get_cell_neighbours
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(inout) :: iomsg
+      character(LEN=iomsglen), intent(inout) :: iomsg
 
       integer :: iostat
-      character(LEN=*) :: msg
+      character(LEN=iomsglen) :: msg
 !
       read(parallel_unit, NML=particles_potential_init_pars, IOSTAT=iostat, IOMSG=msg)
       if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)
@@ -779,10 +779,10 @@ endsubroutine get_cell_neighbours
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(inout) :: iomsg
+      character(LEN=iomsglen), intent(inout) :: iomsg
 
       integer :: iostat
-      character(LEN=*) :: msg
+      character(LEN=iomsglen) :: msg
 !
       read(parallel_unit, NML=particles_potential_run_pars, IOSTAT=iostat, IOMSG=msg)
       if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)

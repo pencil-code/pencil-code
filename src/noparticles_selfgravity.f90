@@ -149,7 +149,7 @@ module Particles_selfgravity
 !***********************************************************************
     subroutine read_particles_selfg_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -165,7 +165,7 @@ module Particles_selfgravity
 !***********************************************************************
     subroutine read_particles_selfg_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

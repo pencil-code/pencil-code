@@ -130,7 +130,7 @@ module Particles_number
 !***********************************************************************
     subroutine read_particles_num_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -146,7 +146,7 @@ module Particles_number
 !***********************************************************************
     subroutine read_particles_num_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

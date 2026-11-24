@@ -279,7 +279,7 @@ module Particles_chemistry
   endsubroutine cleanup_chemistry_pencils
 ! ******************************************************************************
   subroutine read_particles_chem_init_pars(iomsg)
-    character(LEN=*), intent(out) :: iomsg
+    character(LEN=iomsglen), intent(out) :: iomsg
 
     iomsg=""
   endsubroutine read_particles_chem_init_pars
@@ -291,7 +291,7 @@ module Particles_chemistry
   endsubroutine write_particles_chem_init_pars
 ! ******************************************************************************
   subroutine read_particles_chem_run_pars(iomsg)
-    character(LEN=*), intent(out) :: iomsg
+    character(LEN=iomsglen), intent(out) :: iomsg
 
     iomsg=""
   endsubroutine read_particles_chem_run_pars
