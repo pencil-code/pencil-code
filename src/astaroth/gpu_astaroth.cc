@@ -3295,9 +3295,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 
-  //Not worth it to get this working inside the container
-  const bool inside_container = ltraining;
-  if (!inside_container) generate_bcs();
+  generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
   store_config(mesh.info);
   ac_compile();
@@ -3433,6 +3431,9 @@ extern "C" void reloadConfig()
   ac_compile();
   acLoadLibrary(mesh.info);
   acGridInit(mesh);
+
+  GW_timestep_graph = acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress);
+
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);
   fflush(stderr);
