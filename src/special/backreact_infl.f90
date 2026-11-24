@@ -558,7 +558,7 @@ module Special
 !  amplitude options at their defaults (lapply_BD_kNy_factor=F, lappy_BD_k1D_factor=F, linv_BD=T);
 !  they would rescale the amplitude again (lBD_scaling_wHubble is not used in this branch).
 !
-            if (lBD_box_normalization) then
+            if (lBD_box_normalization.and.dimensionality>0) then
               Vd=1.
               if (nxgrid>1) Vd=Vd*Lx
               if (nygrid>1) Vd=Vd*Ly
