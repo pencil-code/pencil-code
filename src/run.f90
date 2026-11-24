@@ -234,10 +234,13 @@ endsubroutine helper_loop
   subroutine maybe_wsnap_UETCs(f)
 !
 !  Write a UETC snapshot if UETC_spec=T and t has reached the next output
-!  time. The first snapshot is taken at the start of the run; after a restart
-!  output continues duetc after the last stored snapshot.
+!  time. The first snapshot is taken when t>=tuetc_start (default -impossible)
+!  after a restart output continues duetc after
+!  the last stored snapshot. Until the first
+!  snapshot exists, powerUETCs writes nothing.
 !
 !  01-Apr-25/Madeline: coded (originally inlined in run.f90)
+!  24-Nov-26/TP: tuetc_start
 !
     use Boundcond, only: update_ghosts
     use Diagnostics_methods, only: drop_diagnostic_controls
@@ -269,6 +272,7 @@ endsubroutine helper_loop
         if (tuetc-duetc > t+.5*duetc) call fatal_error('maybe_wsnap_UETCs', &
             'UETCS_time.dat has snapshots later than t (left over from an earlier run?)')
       endif
+      tuetc=max(tuetc,real(tuetc_start,KIND=rkind8))
     endif
 !
     if (t >= tuetc-1e-3*duetc) then

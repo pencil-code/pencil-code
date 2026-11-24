@@ -332,6 +332,7 @@ module Cdata
   real :: tvid_crit_log_interval=impossible  !PAR_DOC: critical time above which we set dvid to a negative value.
   real :: dit1=impossible
   real :: duetc=impossible       !PAR_DOC: save UETC snapshots every duetc time units
+  real :: tuetc_start=-impossible !PAR_DOC: no UETC snapshots before this time
   integer, parameter :: nv_uetc=20 ! fields per UETC snapshot, see wsnap_UETCs
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
