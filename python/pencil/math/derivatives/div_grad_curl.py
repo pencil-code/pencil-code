@@ -1023,7 +1023,7 @@ def traceless_strain(
         # Make sure x has compatible dimensions.
         x = x[np.newaxis, np.newaxis, :]
         sij[1, 2] = sij[1, 2] - 0.5 * f[2] / x
-        sij[2, 2] = sij[2, 2] + 0.5 * f[1] / x
+        sij[2, 2] = sij[2, 2] + f[1] / x
         sij[2, 1] = sij[1, 2]
 
     if coordinate_system == "spherical":
