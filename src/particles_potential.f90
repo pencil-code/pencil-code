@@ -757,7 +757,7 @@ endsubroutine get_cell_neighbours
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(inout) :: iomsg
+      character(LEN=*), intent(inout) :: iomsg
 
       integer :: iostat
       character(LEN=iomsglen) :: msg
@@ -779,7 +779,7 @@ endsubroutine get_cell_neighbours
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(inout) :: iomsg
+      character(LEN=*), intent(inout) :: iomsg
 
       integer :: iostat
       character(LEN=iomsglen) :: msg

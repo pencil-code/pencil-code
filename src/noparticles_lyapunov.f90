@@ -90,7 +90,7 @@ module Particles_lyapunov
 !***********************************************************************
     subroutine read_plyapunov_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
 !
@@ -105,7 +105,7 @@ module Particles_lyapunov
 !***********************************************************************
     subroutine read_plyapunov_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
 !

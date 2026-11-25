@@ -122,7 +122,7 @@ module PointMasses
 !  27-aug-06/wlad: adapted
 !
       use Particles_main, only: append_particle_index
-!      
+!
       integer :: iqvar
 !
       call svn_id( &
@@ -275,7 +275,7 @@ module PointMasses
         call fatal_error('initialize_pointmasses','inconsistency '// &
             'between lcylindrical_gravity from cdata and the one from point mass')
 !
-!  Smoothing radius 
+!  Smoothing radius
 !
       if (any(r_smooth == impossible)) then 
         do ks=1,nqpar
@@ -532,7 +532,7 @@ module PointMasses
             'The mass of the last particle in the pmass array will be '// &
             'reassigned to ensure that the total mass is g0')
 !
-!  Correct the semimajor of the secondaries by the offset they generate. 
+!  Correct the semimajor of the secondaries by the offset they generate.
 !
         do ks=1,nqpar
           ! sign(A,B) returns the value of A with the sign of B
@@ -686,7 +686,7 @@ module PointMasses
             if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,ks)
           endif
         enddo
-!       
+!
 
 !
 !  The last one (star) fixes the CM also with velocity zero
@@ -722,7 +722,7 @@ module PointMasses
         velocity(isecondary,2) = sqrt((1-eccentricity)/(1+eccentricity) * GNewton/semimajor_axis) &
                                  * pmass(iprimary)/totmass
 !
-!  Correct secondary by gas gravity 
+!  Correct secondary by gas gravity
 !
         if (lcorrect_gasgravity_lstart) call initcond_correct_gasgravity(f,velocity,isecondary)
 !
@@ -785,7 +785,7 @@ module PointMasses
       call dvvq_dt_pointmasses_pencil(f,df,p)
 !
     endsubroutine pointmasses_pde_pencil
-!***********************************************************************         
+!***********************************************************************
     subroutine dvvq_dt_pointmasses_pencil(f,df,p)
 !
 !  Add gravity from the particles to the gas and the backreaction from the
@@ -824,7 +824,7 @@ module PointMasses
         if (lgas_removal.or.lmomentum_removal) call gas_accretion_by_pointmass(df,p)
 !
 !  Add the gas gravity to the pointmasses by integration if llive_secondary
-!  is true.   
+!  is true.
 !
 !  The integration is needed for these two cases:
 !
@@ -843,7 +843,7 @@ module PointMasses
 
             lparticle_out=.false.
 !
-!  Check if the particle is out of the box. 
+!  Check if the particle is out of the box.
 !
             if ((fq(ks,ixq)< xyz0(1)).or.(fq(ks,ixq) > xyz1(1)) .or. &
                 (fq(ks,iyq) < xyz0(2)).or.(fq(ks,iyq) > xyz1(2)) .or. &
@@ -852,7 +852,7 @@ module PointMasses
 !
 !  A live particle needs to be integrated if selfgravity is not being used (poisson
 !  equation not being solved) or if it is not in the grid (in which case the selfgravity
-!  cannot be interpolated. 
+!  cannot be interpolated.
 !
             lintegrate=(.not.lselfgravity).or.lparticle_out
 !
@@ -896,7 +896,7 @@ module PointMasses
       call calc_diagnostics_pointmasses(p)
 
       call keep_compiler_quiet(f)
-!      
+!
     endsubroutine dvvq_dt_pointmasses_pencil
 !***********************************************************************
     subroutine calc_diagnostics_pointmasses(p)
@@ -952,7 +952,7 @@ module PointMasses
 !  Compute gas accretion rate, and remove it from the gas.
 !
 !  Add it accordingly to Eq 6 of Duffell et al. 2020 (ApJ, 901, 25)
-!      
+!
 !  01-aug-22/wlad: coded
 !
       use Sub, only: get_radial_distance
@@ -1022,7 +1022,7 @@ module PointMasses
       endif
 !
       call keep_compiler_quiet(f,df)
-!    
+!
     endsubroutine pointmasses_pde
 !***********************************************************************
     subroutine calc_hill_radius(hill_radius_square)
@@ -1111,7 +1111,7 @@ module PointMasses
 !
       if (lramp) call get_ramped_mass
 !
-!  To the N^2 problem of adding gravity of each massive particle to another. 
+!  To the N^2 problem of adding gravity of each massive particle to another.
 !
       do k=1,nqpar
         call gravity_pointmasses(k,hill_radius_square,.true.)
@@ -1125,7 +1125,7 @@ module PointMasses
             dfq(k,ivxq) = dfq(k,ivxq) + 2.0*Omega*fq(k,ivyq)
             dfq(k,ivyq) = dfq(k,ivyq) - 2.0*Omega*fq(k,ivxq)
           endif
-!         
+!
           if (lcentrifugal_force_pointmass) then
             if (headtt) print*,'dvvq_dt_pointmasses: Add Centrifugal force; Omega=', Omega
             dfq(k,ivxq) = dfq(k,ivxq) + Omega**2*fq(k,ixq)
@@ -1252,7 +1252,7 @@ module PointMasses
 !
           case ('boley')
 !
-!  Potential that Aaron Boley uses (should ask him for reference). Exactly matches Newtonian outside Hill radius. 
+!  Potential that Aaron Boley uses (should ask him for reference). Exactly matches Newtonian outside Hill radius.
 !
             r2_ij=rr2
             if (r2_ij .gt. hill_radius_square(ks)) then
@@ -1272,7 +1272,7 @@ module PointMasses
           if (.not.(lcallpointmass).and.laccretion(ks)) then
             rs2=(accrete_hills_frac(ks)**2)*hill_radius_square(ks)
             if (r2_ij<=rs2) then
-              !flag particle for removal 
+              !flag particle for removal
               flag_pt=.true.
               return
             endif
@@ -1443,7 +1443,7 @@ module PointMasses
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=pointmasses_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1463,7 +1463,7 @@ module PointMasses
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=pointmasses_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1602,7 +1602,7 @@ module PointMasses
       endif
 !
     endsubroutine calc_torque
-!***********************************************************************             
+!***********************************************************************
     subroutine calc_torque_split_int_ext(p,dist,ks)
 !
 !  Output torque diagnostic for nbody particle ks
@@ -1829,11 +1829,11 @@ module PointMasses
               Omega2_pm(i) = 0.
             endif
           enddo
-!                                                                                                                                     
+!
         case default
-!                                                                                                                                     
-!  Catch unknown values                                                                                                               
-!                                                                                                                                     
+!
+!  Catch unknown values
+!
           call fatal_error("get_total_gravity","no such ipotential_pointmass: "// &
                            trim(ipotential_pointmass(ks)))
         endselect
@@ -1855,7 +1855,7 @@ module PointMasses
     subroutine initcond_correct_gasgravity(f,velocity,k)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
-!  due to the gravity of gas. 
+!  due to the gravity of gas.
 !
 !  14-may-20/wlad : coded
 !
@@ -1908,7 +1908,7 @@ module PointMasses
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
 !  due to the gravity of gas, by interpolating from the
-!  gravitational acceleration from the selfgravity module. 
+!  gravitational acceleration from the selfgravity module.
 !
 !  14-may-20/wlad : coded
 !
@@ -1936,7 +1936,7 @@ module PointMasses
     subroutine correct_gasgravity_integrate(f,k,accg)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
-!  due to the gravity of gas, by integrating the whole grid. 
+!  due to the gravity of gas, by integrating the whole grid.
 !
 !  29-aug-18/wlad : coded
 !
@@ -1961,9 +1961,9 @@ module PointMasses
 !
       xxpar = fq(k,ixq:izq)
       rp0=r_smooth(k)
-!      
+!
       sum_loc=0.
-!      
+!
       mloop: do m=m1,m2
       nloop: do n=n1,n2
         if (lcartesian_coords) then
@@ -2051,10 +2051,10 @@ module PointMasses
     subroutine bilinear_interpolate(v,q,vp)
 !
 !  Interpolate the gravity vector with bilinear interpolation to the position
-!  of the pointmass(es). 
+!  of the pointmass(es).
 !
       use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
-!      
+!
       real, dimension (nx,ny,nz,3) :: v
       real, dimension (3) :: q
       real, dimension (3) :: vp
@@ -2078,7 +2078,7 @@ module PointMasses
            lperi(1),ix0,ix1,ipx0,ipx1,rdx1,rdx2)
       call calc_indices_and_processors(q(2),ygrid,dy1grid,nprocy,ny,&
            lperi(2),iy0,iy1,ipy0,ipy1,rdy1,rdy2)
-!         
+!
       if (nz==1) then
         iz0=1
       else
@@ -2158,12 +2158,12 @@ module PointMasses
 
       lperiodic: if (.not.lperiodic_direction) then
 !
-!  Non-periodic grid          
+!  Non-periodic grid
 !
         call find_index_by_bisection(q,qgrid,iq0_global)      
         if (qgrid(iq0_global)>q) iq0_global = iq0_global-1
         iq1_global=iq0_global+1
-!      
+!
         dq1=1./(qgrid(iq1_global)-qgrid(iq0_global))
         rdq1 = (q-qgrid(iq0_global))*dq1
         rdq2 = (qgrid(iq1_global)-q)*dq1
@@ -2224,7 +2224,7 @@ module PointMasses
       endif lperiodic
 !
     endsubroutine calc_indices_and_processors
-!***********************************************************************    
+!***********************************************************************
     subroutine integrate_gasgravity(p,rrp,xxpar,accg,rp0)
 !
 !  Calculates acceleration on the point (x,y,z)=xxpar
@@ -2304,7 +2304,7 @@ module PointMasses
 !  And sum over processors with mpireduce
 !
       !take proper care of the trapezoidal rule
-      !in the case of non-periodic boundaries                    
+      !in the case of non-periodic boundaries
       fac = 1.
       if (.not.lperi(2)) then
         if ((m==m1.and.lfirst_proc_y).or.(m==m2.and.llast_proc_y)) fac = 0.5
@@ -2366,14 +2366,14 @@ module PointMasses
 !
 !  Input is either file=qvar if enum=F or file=QVAR if enum=T.
 !  If the latter, append a number to QVAR.
-!      
+!
       filename = trim(file)
       if (enum) then
 !
-!  Prepare to read tsnap.dat         
+!  Prepare to read tsnap.dat
 !
         call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
-!        
+!
 !  Read the tsnap.dat to get N for QVARN (N=nsnap).
 !
         if (lfirst_call) then
@@ -2592,7 +2592,7 @@ module PointMasses
               endif
             endif
           elseif (boundy=='p2pi') then
-!  yp < y0             
+!  yp < y0
             if (fq(k,iyq)< -pi) then
               fq(k,iyq)=fq(k,iyq)+2*pi
               if (fq(k,iyq)<-pi) then
@@ -2680,7 +2680,7 @@ module PointMasses
       endif
 !
       call keep_compiler_quiet(f)
-!      
+!
     endsubroutine pointmasses_timestep_first
 !***********************************************************************
     subroutine pointmasses_timestep_second(f)
@@ -2714,7 +2714,7 @@ module PointMasses
           vv_polar    = fq(ks,ivxq:ivzq)
           xxdot_polar = dfq(ks,ixq:izq)
           vvdot_polar = dfq(ks,ivxq:ivzq)
-!            
+!
           aa_nbody_cart=dfq_cart(ks,:)
           call advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
           fq(ks,ixq:izq)=xx_polar
@@ -2735,7 +2735,7 @@ module PointMasses
             xxdot_polar = dfp_aux(k,index%ixw:index%izw)
             vvdot_polar = dfp_aux(k,index%ivxw:index%ivzw)
             aa_nbody_cart=dfp_aux(k,ivpx_cart:ivpz_cart)
-!            
+!
             call advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
 !
             fp_aux(k,index%ixw:index%izw)=xx_polar
@@ -2748,7 +2748,7 @@ module PointMasses
       endif
 !
       call keep_compiler_quiet(f)
-!      
+!
     endsubroutine pointmasses_timestep_second
 !***********************************************************************
     subroutine advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
@@ -2803,7 +2803,7 @@ module PointMasses
         vy = vrad*sinp + vphi*cosp
         vz = vzed
 !
-!  Transform the position and velocity derivatives to Cartesian coordinates.        
+!  Transform the position and velocity derivatives to Cartesian coordinates.
 !  Add the cartesian velocity to position and cartesian acceleration to velocity.
 !
         xdot = raddot*cosp - phidot*sinp + vx
@@ -2837,9 +2837,9 @@ module PointMasses
         vy = vrad*sint*sinp + vtht*cost*sinp + vphi*cosp
         vz = vrad*cost      - vtht*sint
 !
-!  Transform the position and velocity derivatives to Cartesian coordinates.        
+!  Transform the position and velocity derivatives to Cartesian coordinates.
 !  Add the cartesian velocity to position and cartesian acceleration to velocity.
-!        
+!
         xdot  =  raddot*sint*cosp +  thtdot*cost*cosp -  phidot*sinp + vx
         ydot  =  raddot*sint*sinp +  thtdot*cost*sinp +  phidot*cosp + vy
         zdot  =  raddot*cost      -  thtdot*sint                     + vz
@@ -2932,7 +2932,7 @@ module PointMasses
       real :: cosp,sinp,sint,cost
 !
 !  dvv_cart contain the accelerations transformed to Cartesian, plus
-!  the n-body acceleration, also in Cartesian. Do the RK timestepping.    
+!  the n-body acceleration, also in Cartesian. Do the RK timestepping.
 !
       vv_cart = vv_cart + dt_beta_ts(itsub)*dvv_cart
 !

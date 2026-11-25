@@ -822,7 +822,7 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -838,7 +838,7 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

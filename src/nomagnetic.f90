@@ -294,7 +294,7 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -310,7 +310,7 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

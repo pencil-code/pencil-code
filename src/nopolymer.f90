@@ -121,7 +121,7 @@ module Polymer
 !***********************************************************************
     subroutine read_polymer_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -137,7 +137,7 @@ module Polymer
 !***********************************************************************
     subroutine read_polymer_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

@@ -76,7 +76,7 @@ module Particles_condensation
 !
 !  18-jun-17/anders: coded
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
 !
@@ -96,7 +96,7 @@ module Particles_condensation
 !
 !  18-jun-17/anders: coded
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
 !

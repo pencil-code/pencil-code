@@ -153,7 +153,7 @@ module Chiral
       pp=.5*(1.+chiral_fidelity)
       qq=.5*(1.-chiral_fidelity)
 !
-      print*,"YY init: ",f(l1:l2,m1:m2,n1:n2,2)
+      !print*,"YY init: ",f(l1:l2,m1:m2,n1:n2,2)
     endsubroutine initialize_chiral
 !***********************************************************************
     subroutine init_chiral(f)
@@ -690,7 +690,7 @@ module Chiral
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=chiral_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -710,7 +710,7 @@ module Chiral
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=chiral_run_pars, IOSTAT=iostat, IOMSG=iomsg)

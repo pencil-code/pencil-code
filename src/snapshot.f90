@@ -1222,8 +1222,8 @@ module Snapshot
             !$omp do collapse(2)
             do nloc=n1,n2
               do mloc=m1,m2
-                !TP: We have to do this stupid hack since n and m are threadprivate and at least some compilers do not let the loop variables be threadprivate
-                !TP: The real problem is that all der functions work on global n and m but that can't be changed easily
+                !TP: Necessary since n and m are threadprivate and some compilers do not let the loop variables be threadprivate.
+                !TP: The real problem is that all der functions work on global n and m but that can't be changed easily.
                 n=nloc
                 m=mloc
                 call curli(f,iaa,b_vec(:,m-nghost,n-nghost),ivec)

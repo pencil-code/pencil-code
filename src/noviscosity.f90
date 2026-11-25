@@ -46,7 +46,7 @@ module Viscosity
 !***********************************************************************
     subroutine read_viscosity_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

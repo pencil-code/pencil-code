@@ -20,7 +20,7 @@
 !***************************************************************
     subroutine read_python_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       
       call keep_compiler_quiet(iomsg)
 

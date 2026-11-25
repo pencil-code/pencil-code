@@ -3088,7 +3088,7 @@ module Solid_Cells
 !
     use File_io, only: parallel_unit
 !
-    character(LEN=iomsglen), intent(out) :: iomsg
+    character(LEN=*), intent(out) :: iomsg
     integer :: iostat
 !
     !read(parallel_unit, NML=solid_cells_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -3109,7 +3109,7 @@ module Solid_Cells
 !
     use File_io, only: parallel_unit
 !
-    character(LEN=iomsglen), intent(out) :: iomsg
+    character(LEN=*), intent(out) :: iomsg
     integer :: iostat
 !
     read(parallel_unit, NML=solid_cells_run_pars, IOSTAT=iostat, IOMSG=iomsg)

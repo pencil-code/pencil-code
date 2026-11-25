@@ -55,7 +55,7 @@ module Cosmicray
 !***********************************************************************
     subroutine read_cosmicray_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -71,7 +71,7 @@ module Cosmicray
 !***********************************************************************
     subroutine read_cosmicray_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

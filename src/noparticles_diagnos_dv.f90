@@ -35,7 +35,7 @@ module Particles_diagnos_dv
 !***********************************************************************
     subroutine read_pars_diagnos_dv_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

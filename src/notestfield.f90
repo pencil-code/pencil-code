@@ -72,7 +72,7 @@ module Testfield
 !***********************************************************************
     subroutine read_testfield_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -88,7 +88,7 @@ module Testfield
 !***********************************************************************
     subroutine read_testfield_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

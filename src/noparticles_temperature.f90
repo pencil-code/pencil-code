@@ -112,7 +112,7 @@ module Particles_temperature
 !***********************************************************************
     subroutine read_particles_TT_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -128,7 +128,7 @@ module Particles_temperature
 !***********************************************************************
     subroutine read_particles_TT_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

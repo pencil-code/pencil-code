@@ -249,7 +249,7 @@ module Particles_lyapunov
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_lyapunov_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -269,7 +269,7 @@ module Particles_lyapunov
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_lyapunov_run_pars, IOSTAT=iostat, IOMSG=iomsg)

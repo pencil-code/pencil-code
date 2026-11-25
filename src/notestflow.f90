@@ -69,7 +69,7 @@ module Testflow
 !***********************************************************************
     subroutine read_testflow_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -85,7 +85,7 @@ module Testflow
 !***********************************************************************
     subroutine read_testflow_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

@@ -91,7 +91,7 @@ module Particles_tetrad
 !***********************************************************************
     subroutine read_ptetrad_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
 !
@@ -106,7 +106,7 @@ module Particles_tetrad
 !***********************************************************************
     subroutine read_ptetrad_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
 !

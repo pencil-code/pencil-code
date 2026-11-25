@@ -94,7 +94,7 @@ module Particles_caustics
 !***********************************************************************
     subroutine read_pcaustics_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
 !
@@ -109,7 +109,7 @@ module Particles_caustics
 !***********************************************************************
     subroutine read_pcaustics_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
 !

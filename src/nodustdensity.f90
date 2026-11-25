@@ -108,7 +108,7 @@ module Dustdensity
 !***********************************************************************
     subroutine read_dustdensity_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -124,7 +124,7 @@ module Dustdensity
 !***********************************************************************
     subroutine read_dustdensity_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
