@@ -11,6 +11,7 @@
 module Deriv
 !
   use Cparam
+  use Quiet
 !
   implicit none
 !
@@ -41,6 +42,8 @@ module Deriv
 !
       if (lroot) print*,'calc_coeffs_1 is not evaluated'
 !--   call fatal_error("calc_coeffs_1","not coded for deriv_2nd")
+      call keep_compiler_quiet(grid)
+      call keep_compiler_quiet(coeffs)
 ! 
     endsubroutine calc_coeffs_1
 !***********************************************************************
@@ -52,6 +55,11 @@ module Deriv
       real, dimension(nx), intent(in) :: df
       integer, intent(in) :: j, k
       logical, intent(in), optional :: ignoredx
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(k,j)
+      call keep_compiler_quiet(ignoredx)
 !
     endsubroutine der_main
 !***********************************************************************
@@ -61,6 +69,9 @@ module Deriv
 !
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(in) :: df
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
 !
     endsubroutine der_x
 !***********************************************************************
@@ -70,6 +81,8 @@ module Deriv
 !
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(in) :: df2
+
+      call keep_compiler_quiet(f,df2)
 !
     endsubroutine der2_x
 !***********************************************************************
@@ -79,6 +92,9 @@ module Deriv
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(in) :: df
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
 !
     endsubroutine der_z
 !***********************************************************************
@@ -88,6 +104,9 @@ module Deriv
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(in) :: df2
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df2)
 !
     endsubroutine der2_z
 !***********************************************************************
@@ -98,6 +117,10 @@ module Deriv
       real, dimension (mx,my,mz) :: f
       real, dimension (:) :: df
       integer :: j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der_other
 !***********************************************************************
@@ -108,6 +131,10 @@ module Deriv
       real, dimension (:) :: pencil,df
       integer :: j
       intent(in)  :: df, j, pencil
+
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(pencil)
+      call keep_compiler_quiet(df)
 !
     endsubroutine der_pencil
 !***********************************************************************
@@ -118,6 +145,11 @@ module Deriv
     real, dimension(:,:) :: arr, der
     integer :: idir
     integer, optional :: order
+
+     call keep_compiler_quiet(arr)
+     call keep_compiler_quiet(idir)
+     call keep_compiler_quiet(der)
+     call keep_compiler_quiet(order)
 !
   endsubroutine distr_der
 !***********************************************************************
@@ -126,11 +158,17 @@ module Deriv
 !  Dummy routine
 !
       real, contiguous,dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df2,fac,df
+      real, dimension (nx) :: df2
       integer :: j,k
       logical, optional :: lwo_line_elem
 !
       intent(in) :: f,df2,k,j,lwo_line_elem
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df2)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(lwo_line_elem)
 !
     endsubroutine der2_main
 !***********************************************************************
@@ -139,10 +177,14 @@ module Deriv
 !  Dummy routine
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df2,fac,df
+      real, dimension (nx) :: df2
       integer :: j
 !
       intent(in) :: f,df2,j
+      
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df2)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der2_other
 !***********************************************************************
@@ -153,6 +195,10 @@ module Deriv
       real, dimension (:) :: pencil,df2
       integer :: j
       intent(in)  :: j, pencil, df2
+
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(pencil)
+      call keep_compiler_quiet(df2)
 !
     endsubroutine der2_pencil
 !***********************************************************************
@@ -161,11 +207,16 @@ module Deriv
 !  Dummy routine
 !
       real, contiguous,dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx
-      logical :: igndx
       intent(in)  :: f,k,df,j,ignoredx
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(ignoredx)
 !
     endsubroutine der3
 !***********************************************************************
@@ -175,11 +226,16 @@ module Deriv
 !
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df
-      real :: fac
       integer :: j,k
       logical, optional :: ignoredx,upwind
-      logical :: igndx
       intent(in)  :: f,k,j,ignoredx,upwind
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(ignoredx)
+      call keep_compiler_quiet(upwind)
 !
     endsubroutine der4
 !***********************************************************************
@@ -192,6 +248,12 @@ module Deriv
       integer :: j,k
       logical, optional :: ignoredx
       intent(in)  :: f,k,df,j,ignoredx
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(ignoredx)
 !
     endsubroutine der5
 !***********************************************************************
@@ -200,11 +262,17 @@ module Deriv
 !  Dummy routine
 !
       real, contiguous,dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
       intent(in)  :: f,k,df,j,ignoredx,upwind
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(ignoredx)
+      call keep_compiler_quiet(upwind)
 !
     endsubroutine der6_main
 !***********************************************************************
@@ -215,11 +283,15 @@ module Deriv
       intent(in) :: f,k,j
       intent(in) :: delfk,delfkp1,delfkm1
       real, contiguous,dimension(:,:,:,:) :: f
-      real, dimension (nx) :: delfk,delfkp1,delfkm1,fac
-      real, dimension (nx,-1:1) :: delf
-      real, dimension (0:nx+1) :: delfx
+      real, dimension (nx) :: delfk,delfkp1,delfkm1
       integer :: j,k
-      integer :: i,ii,ix
+      
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(delfk)
+      call keep_compiler_quiet(delfkp1)
+      call keep_compiler_quiet(delfkm1)
+      call keep_compiler_quiet(k)
 !
     endsubroutine der2_minmod
 !***********************************************************************
@@ -236,11 +308,16 @@ module Deriv
 !  Dummy routine
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j
       logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
       intent(in)  :: f,df,j,ignoredx,upwind
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(ignoredx)
+      call keep_compiler_quiet(upwind)
 !
     endsubroutine der6_other
 !***********************************************************************
@@ -253,6 +330,12 @@ module Deriv
       real, dimension (:) :: pencil,df6
       integer :: j
       logical, optional :: ignoredx,upwind
+
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(pencil)
+      call keep_compiler_quiet(df6)
+      call keep_compiler_quiet(ignoredx)
+      call keep_compiler_quiet(upwind)
 !
     endsubroutine der6_pencil
 !***********************************************************************
@@ -264,6 +347,10 @@ module Deriv
       integer           ,  intent(in) :: j
 !
       der5_single=0.
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(dc1)
 !
     endfunction der5_single
 !***********************************************************************
@@ -272,10 +359,17 @@ module Deriv
 !  Dummy routine
 !
       real, contiguous,dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: i,j,k
       logical, optional :: lwo_line_elem
       intent(in) :: f,k,df,i,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(i)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(lwo_line_elem)
 !
     endsubroutine derij_main
 !***********************************************************************
@@ -284,9 +378,14 @@ module Deriv
 !  Dummy routine
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: i,j
       intent(in)  :: f,df,i,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(i)
+      call keep_compiler_quiet(j)
 !
     endsubroutine derij_other
 !***********************************************************************
@@ -295,9 +394,15 @@ module Deriv
 !  Dummy routine
 !
       real, contiguous,dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: i,j,k
       intent(in) :: f,k,df,i,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(i)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der5i1j
 !***********************************************************************
@@ -306,9 +411,15 @@ module Deriv
 !  Dummy routine
 !
       real, contiguous,dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: i,j,k
       intent(in) :: f,k,df,i,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(i)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der4i2j
 !***********************************************************************
@@ -317,9 +428,12 @@ module Deriv
 !  Dummy routine
 !
       real, contiguous,dimension(:,:,:,:),intent(in) :: f
-      real, dimension (nx) :: fac
       integer,intent(in) :: k
       real, dimension(nx), intent(in) :: df
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
 !
     endsubroutine der2i2j2k
 !***********************************************************************
@@ -329,8 +443,13 @@ module Deriv
 !
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx), intent(in) :: df
-      real, dimension (nx) :: fac
       integer, intent(in) :: k,i,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(i)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der3i3j
 !***********************************************************************          
@@ -340,8 +459,14 @@ module Deriv
 !
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx), intent(in) :: df
-      real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
+      
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ik)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(i)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(k)
 !
     endsubroutine der3i2j1k
 !***********************************************************************
@@ -351,8 +476,14 @@ module Deriv
 !
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx), intent(in) :: df
-      real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ik)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(i)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(k)
 !
     endsubroutine der4i1j1k
 !***********************************************************************
@@ -363,9 +494,15 @@ module Deriv
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
-      integer :: j,k,l
+      integer :: j,k
       intent(in)  :: f,uu,k,j
       intent(in) :: df
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(uu)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der_upwind1st
 !***********************************************************************
@@ -375,10 +512,16 @@ module Deriv
 !
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (:,:) :: df
-      real :: fac
       integer :: pos,k,sgn,j
       intent(in)  :: f,k,pos,sgn,j
       intent(in) :: df
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sgn)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(pos)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der_onesided_4_slice_main
 !***********************************************************************
@@ -388,9 +531,17 @@ module Deriv
 !
       real, contiguous,dimension(:,:,:,:) :: f
       real  :: df
-      real :: fac
-      integer :: pos,lll,mmm,nnn,k,sgn,j
+      integer :: lll,mmm,nnn,k,sgn,j
       intent(in)  :: f,k,df,lll,mmm,nnn,sgn,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sgn)
+      call keep_compiler_quiet(k)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(lll)
+      call keep_compiler_quiet(mmm)
+      call keep_compiler_quiet(nnn)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der_onesided_4_slice_main_pt
 !***********************************************************************
@@ -400,9 +551,14 @@ module Deriv
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (:,:) :: df
-      real :: fac
       integer :: pos,sgn,j
       intent(in)  :: f,df,pos,sgn,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sgn)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(pos)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der_onesided_4_slice_other
 !***********************************************************************
@@ -412,9 +568,16 @@ module Deriv
 !
       real, dimension (mx,my,mz) :: f
       real :: df
-      real :: fac
-      integer :: pos,lll,mmm,nnn,sgn,j
+      integer :: lll,mmm,nnn,sgn,j
       intent(in)  :: f,df,lll,mmm,nnn,sgn,j
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sgn)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(lll)
+      call keep_compiler_quiet(mmm)
+      call keep_compiler_quiet(nnn)
+      call keep_compiler_quiet(j)
 !
     endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
@@ -435,6 +598,13 @@ module Deriv
       integer, dimension(nx)              :: inds
 !
       intent(in)  :: f,df,j,inds,lignored,lnometric
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(inds)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(lignored)
+      call keep_compiler_quiet(lnometric)
 !
     endsubroutine deri_3d_inds
 !************************************************************************
@@ -448,6 +618,11 @@ module Deriv
       integer                          , intent(IN):: topbot
 !
       heatflux_deriv_x = .true.
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(inh)
+      call keep_compiler_quiet(fac)
+      call keep_compiler_quiet(topbot)
 !
     endfunction heatflux_deriv_x
 !***********************************************************************
@@ -455,10 +630,16 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,*) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(idir)
+      call keep_compiler_quiet(val)
 !
     endsubroutine bval_from_neumann_scl
 !***********************************************************************
@@ -466,10 +647,16 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,*) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
+      
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(idir)
+      call keep_compiler_quiet(val)
 !
     endsubroutine bval_from_3rd_scl
 !***********************************************************************
@@ -477,10 +664,16 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,*) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j,idir
       real :: val
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(idir)
+      call keep_compiler_quiet(val)
 !
     endsubroutine bval_from_4th_scl
 !***********************************************************************
@@ -488,10 +681,16 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,*) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j,idir
       logical, optional :: l2nd
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(idir)
+      call keep_compiler_quiet(l2nd)
 !
     endsubroutine set_ghosts_for_onesided_ders
 !***********************************************************************
@@ -499,10 +698,16 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,*) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(idir)
+      call keep_compiler_quiet(val)
 !
     endsubroutine bval_from_neumann_arr
 !***********************************************************************
@@ -510,10 +715,16 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,*) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(idir)
+      call keep_compiler_quiet(val)
 !
     endsubroutine bval_from_3rd_arr
 !***********************************************************************
@@ -521,10 +732,16 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,*) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+      call keep_compiler_quiet(idir)
+      call keep_compiler_quiet(val)
 !
     endsubroutine bval_from_4th_arr
 !***********************************************************************
