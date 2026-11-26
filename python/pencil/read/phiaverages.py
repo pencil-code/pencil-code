@@ -206,8 +206,6 @@ class Averages(object):
             raw_data = []
 
             # Read records
-            # path=os.path.join(datadir, aver_file_name)
-            # print(path)
             file_id = FortranFile(os.path.join(datadir, aver_file_name))
 
             data1 = file_id.read_record(dtype="i4")
