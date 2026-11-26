@@ -99,10 +99,9 @@ class Averages(object):
                         aver_file_name_list.append(
                         os.path.join("averages", "PHIAVG" + str(phi_index))
                         )
-        if not in_file_name_list:
-            print("error: invalid plane name")
-            sys.stdout.flush()
-            return -1
+
+        if len(in_file_name_list) == 0:
+            raise ValueError("could not find phiavg.list")
 
         class Foo(object):
             pass
