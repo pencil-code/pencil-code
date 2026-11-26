@@ -817,6 +817,58 @@ class Averages(object):
         axis_order = ("t", "var", spatial_label) if spatial_label else None
         return t, PencilArray(raw_data, axis_order=axis_order)
 
+    def _read_phiaver(
+        self,
+        datadir,
+        variables,
+        aver_file_name,
+        n_vars,
+        var_index,
+        iter_list,
+        precision="f",
+        lh5=False,
+    ):
+        """
+        Read the PHIAVG file
+        Return the time, cylindrical r and z and raw data.
+        """
+
+        import os
+        import numpy as np
+        from scipy.io import FortranFile
+        from pencil import read
+
+        # Read the data
+        if lh5:
+            raise NotImplementedError
+        else:
+            dim = read.dim(datadir)
+            if dim.precision == "S":
+                read_precision = np.float32
+            if dim.precision == "D":
+                read_precision = np.float64
+
+            # Prepare the raw data.
+            raw_data = []
+
+            # Read records
+            file_id = FortranFile(os.path.join(datadir, aver_file_name))
+
+            data1 = file_id.read_record(dtype="i4")
+            nr_phiavg = data1[0]
+            nz_phiavg = data1[1]
+            nvars = data1[2]
+
+            data2 = file_id.read_record(dtype=read_precision).astype(precision)
+            t = data2[0]
+            r_cyl = data2[1 : nr_phiavg + 1]
+            z_cyl = data2[nr_phiavg + 1 : nr_phiavg + nz_phiavg + 1]
+
+            data3 = file_id.read_record(dtype=read_precision).astype(precision)
+            raw_data = data3.reshape(nvars, nz_phiavg, nr_phiavg)
+
+            return t, r_cyl, z_cyl, raw_data
+
     def __natural_sort(self, l):
         """
         Sort array in a more natural way, e.g. 9VAR < 10VAR

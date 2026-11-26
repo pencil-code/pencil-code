@@ -9,24 +9,12 @@ import sys
 from pencil.util import copy_docstring, PencilArray
 import pathlib
 
-from .averages import _Plane
+from .averages import _Plane, Averages
 
-class PhiAverages(object):
+class PhiAverages(Averages):
     """
-    Averages -- holds Pencil Code averages data and methods.
+    Old class to handle reading phi averages.
     """
-
-    def __init__(self):
-        """
-        Fill members with default values.
-        """
-
-        import numpy as np
-
-        self.t = np.array([])
-
-    def keys(self):
-        return list(self.__dict__.keys())
 
     def read(
         self,
@@ -164,58 +152,6 @@ class PhiAverages(object):
         self.r_cyl = r_cyl
         self.z_cyl = z_cyl
         self.phiavg = ext_object
-
-    def _read_phiaver(
-        self,
-        datadir,
-        variables,
-        aver_file_name,
-        n_vars,
-        var_index,
-        iter_list,
-        precision="f",
-        lh5=False,
-    ):
-        """
-        Read the PHIAVG file
-        Return the time, cylindrical r and z and raw data.
-        """
-
-        import os
-        import numpy as np
-        from scipy.io import FortranFile
-        from pencil import read
-
-        # Read the data
-        if lh5:
-            raise NotImplementedError
-        else:
-            dim = read.dim(datadir)
-            if dim.precision == "S":
-                read_precision = np.float32
-            if dim.precision == "D":
-                read_precision = np.float64
-
-            # Prepare the raw data.
-            raw_data = []
-
-            # Read records
-            file_id = FortranFile(os.path.join(datadir, aver_file_name))
-
-            data1 = file_id.read_record(dtype="i4")
-            nr_phiavg = data1[0]
-            nz_phiavg = data1[1]
-            nvars = data1[2]
-
-            data2 = file_id.read_record(dtype=read_precision).astype(precision)
-            t = data2[0]
-            r_cyl = data2[1 : nr_phiavg + 1]
-            z_cyl = data2[nr_phiavg + 1 : nr_phiavg + nz_phiavg + 1]
-
-            data3 = file_id.read_record(dtype=read_precision).astype(precision)
-            raw_data = data3.reshape(nvars, nz_phiavg, nr_phiavg)
-
-            return t, r_cyl, z_cyl, raw_data
 
 @copy_docstring(PhiAverages.read)
 def phiaver(*args, **kwargs):
