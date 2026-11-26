@@ -265,7 +265,7 @@ module Driver
         filename = "driver/"//trim (driver_file)//"_"//trim (plane)//"_times.dat"
         call find_frame (time, filename, 'l', pos_l, data%time_l, f_index, plane, lreader)
         if (pos_l == 0) then
-          ! The simulation started before the first frame of the time series
+          ! The simulation started before the first (l) frame of the time series
           ! start from zero velocities
           data%frame_r = 0.0
           data%time_l = -time_offset(f_index)
