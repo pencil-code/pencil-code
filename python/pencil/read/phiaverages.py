@@ -82,10 +82,7 @@ class Averages(object):
         in_file_name_list = []
         aver_file_name_list = []
         if lh5:
-            print("read.ogrid: not implemented for hdf5")
-            #
-            # Not implemented
-            #
+            raise NotImplementedError("read.ogrid: not implemented for hdf5")
         else:
             if os.path.exists("data/averages/phiavg.list"):
                 naverages = sum(1 for line in open('data/averages/phiavg.list'))
@@ -194,11 +191,7 @@ class Averages(object):
 
         # Read the data
         if lh5:
-            import h5py
-
-            #
-            # Not implemented
-            #
+            raise NotImplementedError
         else:
             glob_dim = read.dim(datadir)
             nu = glob_dim.nx / 2
