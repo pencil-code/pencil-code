@@ -165,7 +165,6 @@ class Averages(object):
         self.z_cyl = z_cyl
         self.phiavg = ext_object
 
-        return 0
 
     def __equal_newline(self, line):
         """
