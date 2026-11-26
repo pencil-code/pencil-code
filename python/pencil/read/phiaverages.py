@@ -190,10 +190,6 @@ class Averages(object):
         if lh5:
             raise NotImplementedError
         else:
-            glob_dim = read.dim(datadir)
-            nu = glob_dim.nx / 2
-            nv = glob_dim.nz
-
             dim = read.dim(datadir)
             if dim.precision == "S":
                 read_precision = np.float32
