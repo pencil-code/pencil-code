@@ -241,7 +241,7 @@ class Averages(object):
                         # Kishore (2025-Jun-09) is the use of a HDF5 file below correct? TODO
                         good_planes.append("phi")
                         in_file_name_list.append("data/averages/phiavg.list")
-                        aver_file_name_list.append(os.path.join("averages", "phi.h5"))
+                        aver_file_name_list.append(None) #dummy, not used by _read_phiaver_all_times
                 plane_list = good_planes
 
                 if len(good_planes) == 0:
