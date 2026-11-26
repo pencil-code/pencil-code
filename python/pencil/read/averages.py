@@ -820,11 +820,7 @@ class Averages(object):
     def _read_phiaver(
         self,
         datadir,
-        variables,
         aver_file_name,
-        n_vars,
-        var_index,
-        iter_list,
         precision="f",
         lh5=False,
     ):

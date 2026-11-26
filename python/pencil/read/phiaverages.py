@@ -125,11 +125,7 @@ class PhiAverages(Averages):
 
             t, r_cyl, z_cyl, raw_data = self._read_phiaver(
                 datadir=datadir,
-                variables=variables,
                 aver_file_name=aver_file_name,
-                n_vars=n_vars,
-                var_index=var_index,
-                iter_list=iter_list,
                 precision=precision,
                 lh5=lh5,
             )
