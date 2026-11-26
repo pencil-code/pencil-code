@@ -97,7 +97,7 @@ class Averages(object):
                 else:
                     nphiavg = sum(1 for line in open(datadir/"averages/phiavg.files"))
                     in_file_name_list = []
-                    for phi_index in range(1,nphiavg):
+                    for phi_index in range(1,nphiavg+1):
                         in_file_name_list.append(datadir/"averages/phiavg.list")
                         aver_file_name_list.append(
                         os.path.join("averages", "PHIAVG" + str(phi_index))
