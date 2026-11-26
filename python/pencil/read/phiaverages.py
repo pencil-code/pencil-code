@@ -7,6 +7,7 @@ Contains the classes and methods to read phi-averaged files.
 
 import sys
 from pencil.util import copy_docstring, PencilArray
+import pathlib
 
 
 class Averages(object):
@@ -73,6 +74,8 @@ class Averages(object):
         import numpy as np
         from pencil import read
 
+        datadir = pathlib.Path(datadir)
+
         if param is None:
             param = read.param(datadir=datadir, quiet=True)
 
@@ -84,18 +87,18 @@ class Averages(object):
         if lh5:
             raise NotImplementedError("read.ogrid: not implemented for hdf5")
         else:
-            if os.path.exists("data/averages/phiavg.list"):
-                naverages = sum(1 for line in open('data/averages/phiavg.list'))
-                in_file_name_list.append("data/averages/phiavg.list")
+            if os.path.exists(datadir/"averages/phiavg.list"):
+                naverages = sum(1 for line in open(datadir/"averages/phiavg.list"))
+                in_file_name_list.append(datadir/"averages/phiavg.list")
                 if avg_file:
                     aver_file_name_list.append(
                     os.path.join("averages", "PHIAVG" + avg_file)
                     )
                 else:
-                    nphiavg = sum(1 for line in open('data/averages/phiavg.files'))
+                    nphiavg = sum(1 for line in open(datadir/"averages/phiavg.files"))
                     in_file_name_list = []
                     for phi_index in range(1,nphiavg):
-                        in_file_name_list.append("data/averages/phiavg.list")
+                        in_file_name_list.append(datadir/"averages/phiavg.list")
                         aver_file_name_list.append(
                         os.path.join("averages", "PHIAVG" + str(phi_index))
                         )
