@@ -865,6 +865,57 @@ class Averages(object):
 
             return t, r_cyl, z_cyl, raw_data
 
+    def _get_phiavg_files(self, datadir):
+        """
+        Get names of the phi-average output files.
+        Returned filenames are paths are relative to datadir.
+        """
+        fnames = []
+        with open(os.path.join(datadir, "averages/phiavg.files")) as f:
+            for line in f:
+                fname = line.strip()
+                fnames.append(os.path.join("averages", fname))
+        return fnames
+
+    def _read_phiaver_all_times(
+        self,
+        datadir,
+        precision,
+        ):
+        """
+        Read non-HDF5 phiaver output for all times.
+        """
+
+        t = []
+        r_cyl = None
+        z_cyl = None
+        data = []
+
+        for fname in self._get_phiavg_files(datadir):
+            t_this, r_cyl_this, z_cyl_this, data_this = self._read_phiaver(
+                datadir=datadir,
+                aver_file_name=fname,
+                precision=precision,
+                )
+
+            if r_cyl is None:
+                r_cyl = r_cyl_this
+            else:
+                if not np.all(r_cyl == r_cyl_this):
+                    raise RuntimeError("r_cyl differs for different times!")
+
+            if z_cyl is None:
+                z_cyl = z_cyl_this
+            else:
+                if not np.all(z_cyl == z_cyl_this):
+                    raise RuntimeError("z_cyl differs for different times!")
+
+            t.append(t_this)
+            data.append(data_this)
+
+        data = PencilArray(data, axis_order=("t", "var", "z", "r"))
+        return np.array(t), r_cyl, z_cyl, data
+
     def __natural_sort(self, l):
         """
         Sort array in a more natural way, e.g. 9VAR < 10VAR
