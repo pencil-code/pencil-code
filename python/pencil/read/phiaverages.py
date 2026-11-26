@@ -30,6 +30,7 @@ class PhiAverages(Averages):
 
          Read Pencil Code phi-averaged data.
 
+         NOTE: you can now do pc.read.aver(plane_list=["phi"]) instead of this
 
          Keyword arguments:
 
