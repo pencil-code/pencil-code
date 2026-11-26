@@ -121,8 +121,6 @@ class PhiAverages(Averages):
                 except ValueError:
                     break
 
-            n_vars = len(variables)
-
             t, r_cyl, z_cyl, raw_data = self._read_phiaver(
                 datadir=datadir,
                 aver_file_name=aver_file_name,
