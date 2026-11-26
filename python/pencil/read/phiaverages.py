@@ -125,8 +125,14 @@ class Averages(object):
             file_id = open(os.path.join(os.path.dirname(datadir), in_file_name))
             variables = file_id.readlines()
             file_id.close()
-            for i in range(sum(list(map(self.__equal_newline, variables)))):
-                variables.remove("\n")
+
+            #remove newlines
+            while True:
+                try:
+                    variables.remove("\n")
+                except ValueError:
+                    break
+
             n_vars = len(variables)
 
             t, r_cyl, z_cyl, raw_data = self.__read_phiaver(
