@@ -135,7 +135,7 @@ class Averages(object):
 
             n_vars = len(variables)
 
-            t, r_cyl, z_cyl, raw_data = self.__read_phiaver(
+            t, r_cyl, z_cyl, raw_data = self._read_phiaver(
                 datadir,
                 variables,
                 aver_file_name,
@@ -165,7 +165,7 @@ class Averages(object):
         self.z_cyl = z_cyl
         self.phiavg = ext_object
 
-    def __read_phiaver(
+    def _read_phiaver(
         self,
         datadir,
         variables,
