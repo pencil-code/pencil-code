@@ -619,7 +619,7 @@ class Simulation:
             self.dim = False
             REEXPORT = True
 
-        if REEXPORT == True:
+        if REEXPORT:
             self.export()
         return self
 
