@@ -836,82 +836,88 @@ endsubroutine helper_loop
 
   real, intent(in) :: wall_clock_time
   integer :: memuse, memory, memcpu
+  integer, parameter :: nelems = nw+npar
+  character(len=512) :: elems_string
+
+
+  if(lparticles) then
+    elems_string = '(meshpoint+particle)'
+  else
+    elems_string = 'meshpoint'
+  endif
 
   if (lroot) then
     print*
     write(*,'(A,1pG10.3,A,1pG11.4,A)') ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
                                        ' (+/- ', real(mpiwtick())/3600.0, ')'
     if (it>1) then
-      if (lparticles) then
-        write(*,'(A,1pG10.3)') ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
-                               wall_clock_time/icount/real(nw+npar/ncpus)/ncpus/1.0e-6
-      else
-        write(*,'(A,1pG14.7)') ' Wall clock time/timestep/meshpoint [microsec] =', &
-                               wall_clock_time/icount/nw/ncpus/1.0e-6
-        write(*,'(A,1pG14.7)') ' Wall clock time/timestep/local meshpoint [microsec] =', &
-                               wall_clock_time/icount/nw/1.0e-6
-        write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/local meshpoint [microsec] =', &
-                               rhs_sum_time/icount/nw/1.0e-6
+      write(*,'(A,1pG10.3)') ' Wall clock time/timestep/'//trim(elems_string)//' [microsec] =', &
+                             wall_clock_time/icount/real(nelems/ncpus)/ncpus/1.0e-6
+      write(*,'(A,1pG14.7)') ' Wall clock time/timestep/meshpoint [microsec] =', &
+                             wall_clock_time/icount/nw/ncpus/1.0e-6
+      write(*,'(A,1pG14.7)') ' Wall clock time/timestep/local meshpoint [microsec] =', &
+                             wall_clock_time/icount/nw/1.0e-6
+      write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/local meshpoint [microsec] =', &
+                             rhs_sum_time/icount/nw/1.0e-6
 
-        !The more extensive results are always outputted for GPU runs and opt-in for CPU runs.
-        !I assume ip=13 would output little enough debug prints to not have an effect
-        !on the measurements
-        if (lgpu .or. ip <= 13) then
-          write(*,'(A,1pG14.7)') &
-            ' After substep wall clock time/timestep/local meshpoint [microsec] =', &
-            after_substep_sum_time/icount/nw/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Before+After boundary wall clock time/timestep/local meshpoint [microsec] =', &
-            before_and_after_boundary_sum_time/icount/nw/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
-            time_doing_diagnostics/icount/nw/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Timestep wall clock time/timestep/local meshpoint [microsec] =', &
-            time_in_timestep/icount/nw/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Timestep (without waiting) wall clock time/timestep/local meshpoint [microsec] =', &
-            (time_in_timestep-time_spent_copying_and_waiting)/icount/nw/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Timestep wall clock time/timestep/meshpoint [microsec] =', &
-            time_in_timestep/icount/nw/ncpus/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Timestep (without waiting) wall clock time/timestep/meshpoint [microsec] =', &
-            (time_in_timestep-time_spent_copying_and_waiting)/icount/nw/ncpus/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Diagnostics wall clock time/timestep/meshpoint [microsec] =', &
-            time_doing_diagnostics/icount/nw/ncpus/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Rhs wall clock time/timestep/meshpoint [microsec] =', &
-            rhs_sum_time/icount/nw/ncpus/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' After substep wall clock time/timestep/meshpoint [microsec] =', &
-            after_substep_sum_time/icount/nw/ncpus/1.0e-6
-          write(*,'(A,1pG14.7)') &
-            ' Before+After boundary wall clock time/timestep/meshpoint [microsec] =', &
-            before_and_after_boundary_sum_time/icount/nw/ncpus/1.0e-6
+      !The more extensive results are always outputted for GPU runs and opt-in for CPU runs.
+      !I assume ip=13 would output little enough debug prints to not have an effect
+      !on the measurements
+      if (lgpu .or. ip <= 13) then
+        write(*,'(A,1pG14.7)') &
+          ' After substep wall clock time/timestep/local meshpoint [microsec] =', &
+          after_substep_sum_time/icount/nw/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Before+After boundary wall clock time/timestep/local meshpoint [microsec] =', &
+          before_and_after_boundary_sum_time/icount/nw/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
+          time_doing_diagnostics/icount/nw/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Timestep wall clock time/timestep/local meshpoint [microsec] =', &
+          time_in_timestep/icount/nw/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Timestep (without waiting) wall clock time/timestep/local meshpoint [microsec] =', &
+          (time_in_timestep-time_spent_copying_and_waiting)/icount/nw/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Timestep wall clock time/timestep/meshpoint [microsec] =', &
+          time_in_timestep/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Timestep (without waiting) wall clock time/timestep/meshpoint [microsec] =', &
+          (time_in_timestep-time_spent_copying_and_waiting)/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Diagnostics wall clock time/timestep/meshpoint [microsec] =', &
+          time_doing_diagnostics/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Rhs wall clock time/timestep/meshpoint [microsec] =', &
+          rhs_sum_time/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' After substep wall clock time/timestep/meshpoint [microsec] =', &
+          after_substep_sum_time/icount/nw/ncpus/1.0e-6
+        write(*,'(A,1pG14.7)') &
+          ' Before+After boundary wall clock time/timestep/meshpoint [microsec] =', &
+          before_and_after_boundary_sum_time/icount/nw/ncpus/1.0e-6
 
-          if (lradiation_ray) then
-            write(*,'(A,1pG14.7)') &
-              ' Radtransfer wall clock time/timestep/meshpoint [microsec] =', &
-              radtransfer_sum_time/icount/nw/ncpus/1.0e-6
-            write(*,'(A,1pG14.7)') &
-              ' Radtransfer wall clock time/timestep/local meshpoint [microsec] =', &
-              radtransfer_sum_time/icount/nw/1.0e-6
-            write(*,'(A,1pG14.7)') &
-              ' Radtransfer+Rhs wall clock time/timestep/meshpoint [microsec] =', &
-              (rhs_sum_time+radtransfer_sum_time)/icount/nw/ncpus/1.0e-6
-          endif
+        if (lradiation_ray) then
+          write(*,'(A,1pG14.7)') &
+            ' Radtransfer wall clock time/timestep/meshpoint [microsec] =', &
+            radtransfer_sum_time/icount/nw/ncpus/1.0e-6
+          write(*,'(A,1pG14.7)') &
+            ' Radtransfer wall clock time/timestep/local meshpoint [microsec] =', &
+            radtransfer_sum_time/icount/nw/1.0e-6
+          write(*,'(A,1pG14.7)') &
+            ' Radtransfer+Rhs wall clock time/timestep/meshpoint [microsec] =', &
+            (rhs_sum_time+radtransfer_sum_time)/icount/nw/ncpus/1.0e-6
+        endif
 
-          if (ltraining) then
-            if (training_time>0) write(*,'(A,1pG14.7)') &
-              ' Training wall clock time/timestep/meshpoint [microsec] =', &
-              (training_time)/icount/nw/1.0e-6
+        if (ltraining) then
+          if (training_time>0) write(*,'(A,1pG14.7)') &
+            ' Training wall clock time/timestep/meshpoint [microsec] =', &
+            (training_time)/icount/nw/1.0e-6
 
-            if (inference_time>0) write(*,'(A,1pG14.7)') &
-              ' Inference wall clock time/timestep/meshpoint [microsec] =', &
-              (inference_time)/icount/nw/1.0e-6
-          endif
+          if (inference_time>0) write(*,'(A,1pG14.7)') &
+            ' Inference wall clock time/timestep/meshpoint [microsec] =', &
+            (inference_time)/icount/nw/1.0e-6
         endif
       endif
     endif
