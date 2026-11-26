@@ -206,9 +206,6 @@ class Averages(object):
                     if os.path.exists(os.path.join(simdir, prefix + "aver.in")):
                         plane_list.append(prefix)
 
-            #if var_index >= 0:
-            #    print("var_index {} requires plane_list = 'y' or 'z',".format(var_index))
-            #    sys.stdout.flush()
             if avfile_list:
                 if isinstance(avfile_list, list):
                     aver_file_name_list = avfile_list
