@@ -281,6 +281,7 @@ class Averages(object):
                         for indx, var in zip(range(n_vars),variables):
                             if var in plane_var_names:
                                 var_index.append(indx)
+
                 if plane == "xy" or plane == "xz" or plane == "yz":
                     t, raw_data = self._read_2d_aver(
                         plane,
