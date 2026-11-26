@@ -825,7 +825,7 @@ class Averages(object):
         lh5=False,
     ):
         """
-        Read the PHIAVG file
+        Read the PHIAVG file (which contains the data for one output iteration).
         Return the time, cylindrical r and z and raw data.
         """
 
