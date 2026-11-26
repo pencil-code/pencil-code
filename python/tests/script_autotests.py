@@ -18,6 +18,7 @@ samples_with_scripttests = [
     "samples/helical-MHDturb",
     "samples/helical-MHDturb_HDF5",
     "samples/helical-MHDturb-noncube",
+    "samples/mdwarf",
     "samples/output_times",
     "samples/power_xy/complex_iodist",
     "samples/power_xy/complex_nprocz_2",
