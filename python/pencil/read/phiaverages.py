@@ -165,14 +165,6 @@ class Averages(object):
         self.z_cyl = z_cyl
         self.phiavg = ext_object
 
-
-    def __equal_newline(self, line):
-        """
-        Determine if string is equal new line.
-        """
-
-        return line == "\n"
-
     def __read_phiaver(
         self,
         datadir,
