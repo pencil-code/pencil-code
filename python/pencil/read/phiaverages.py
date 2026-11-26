@@ -11,7 +11,7 @@ import pathlib
 
 from .averages import _Plane
 
-class Averages(object):
+class PhiAverages(object):
     """
     Averages -- holds Pencil Code averages data and methods.
     """
@@ -217,11 +217,11 @@ class Averages(object):
 
             return t, r_cyl, z_cyl, raw_data
 
-@copy_docstring(Averages.read)
+@copy_docstring(PhiAverages.read)
 def phiaver(*args, **kwargs):
     """
-    Wrapper for :py:meth:`Averages.read`
+    Wrapper for :py:meth:`PhiAverages.read`
     """
-    averages_tmp = Averages()
+    averages_tmp = PhiAverages()
     averages_tmp.read(*args, **kwargs)
     return averages_tmp
