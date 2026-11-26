@@ -9,6 +9,7 @@ import sys
 from pencil.util import copy_docstring, PencilArray
 import pathlib
 
+from .averages import _Plane
 
 class Averages(object):
     """
@@ -106,9 +107,6 @@ class Averages(object):
         if len(in_file_name_list) == 0:
             raise ValueError("could not find phiavg.list")
 
-        class Foo(object):
-            pass
-
         glob_dim = read.dim(datadir)
         nu = glob_dim.nx / 2
         nv = glob_dim.nz
@@ -121,7 +119,7 @@ class Averages(object):
         ii=0
         for in_file_name, aver_file_name in zip(in_file_name_list, aver_file_name_list):
             # This one will store the data.
-            ext_object = Foo()
+            ext_object = _Plane()
 
             # Get the averaged quantities.
             file_id = open(os.path.join(os.path.dirname(datadir), in_file_name))
