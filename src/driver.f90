@@ -273,6 +273,8 @@ module Driver
           filename = "driver/"//trim (driver_file)//"_"//trim (plane)//".dat"
           call read_frame (pos_l, filename, f_index, plane, dim_1, dim_2, data%frame_r, lreader)
         endif
+        ! for constant driving, put first (l) frame at the beginning:
+        if (data%time_l == huge (0.0)) data%time_l = -time_offset(f_index)
         ! Make sure that the following (r) frame will get loaded:
         data%time_r = data%time_l
         lfirst_call = .false.
