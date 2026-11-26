@@ -453,8 +453,7 @@ module Special
       real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD, deriv_prefactor
       real :: BD_norm, BD_kpow, Vd, Sd
       integer :: j
-      real :: lnascale
-!
+      real :: lnascale,dimens
 !
       do j=1,ninit
         select case (initspecial(j))
@@ -563,7 +562,8 @@ module Special
               if (nxgrid>1) Vd=Vd*Lx
               if (nygrid>1) Vd=Vd*Ly
               if (nzgrid>1) Vd=Vd*Lz
-              Sd=2.*pi**(.5*dimensionality)/gamma(.5*dimensionality)
+              dimens = .5*dimensionality
+              Sd=2.*pi**dimens/gamma(dimens)
               BD_norm=sqrt((2.*pi)**dimensionality/Vd/(2.*pi**2*Sd))
               BD_kpow=.5*(3-dimensionality)
               amplphi_BD=amplphi*BD_norm/ascale_ini
@@ -691,7 +691,6 @@ module Special
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
-!
 !
 ! infl_phi
       if (lpencil(i_infl_phi)) p%infl_phi=f(l1:l2,m,n,iinfl_phi)
