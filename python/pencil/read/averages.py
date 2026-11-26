@@ -295,7 +295,7 @@ class Averages(object):
                         proc,
                         precision=precision,
                     )
-                elif plane == "y" or plane == "z" or plane == "phi":
+                elif plane == "y" or plane == "z":
                     t, raw_data = self._read_1d_aver(
                         plane,
                         datadir,
@@ -309,6 +309,13 @@ class Averages(object):
                         proc,
                         precision=precision,
                     )
+                elif plane == "phi":
+                    t, r_cyl, z_cyl, raw_data = self._read_phiaver_all_times(
+                        datadir=datadir,
+                        precision=precision,
+                        )
+                    ext_object.r_cyl = r_cyl
+                    ext_object.z_cyl = z_cyl
                 else:
                     raise ValueError(f"Unknown plane {plane}.")
 
