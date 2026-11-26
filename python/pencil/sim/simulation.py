@@ -645,14 +645,17 @@ class Simulation:
         tmp_dict = self.tmp_dict
         self.tmp_dict = {}
 
-        try:
-            save(self, name="sim", folder=self.pc_dir)
-            # restore self.tmp_dict
-            self.tmp_dict = tmp_dict
-        except Exception as e:
-            pc_print("Warning: pencil.io.save failed. If dill is not installed, try:")
-            pc_print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
-            pc_print(f"The raised error was: {e}")
+        if os.path.exists(self.path):
+            try:
+                save(self, name="sim", folder=self.pc_dir)
+                # restore self.tmp_dict
+                self.tmp_dict = tmp_dict
+            except Exception as e:
+                pc_print("Warning: pencil.io.save failed. If dill is not installed, try:")
+                pc_print("'pip3 install dill' (Python 3) or 'pip install dill' (Python 2).")
+                pc_print(f"The raised error was: {e}")
+        else:
+            warnings.warn(f"not saving simulation object for non-existent simulation directory: {self.path}")
 
     def started(self):
         """Returns whether simulation has already started.
