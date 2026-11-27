@@ -24,6 +24,8 @@ module Equ
   real, public    :: time_spent_copying_and_waiting=0.
   real, public    :: radtransfer_sum_time   =0.
   real, public    :: rhs_sum_time=0.
+  
+  logical, pointer :: lrelativistic
 
   private
 !
@@ -58,6 +60,7 @@ module Equ
       use Driver, only: driver_apply
       use Energy
       use EquationOfState
+      use SharedVariables, only: get_shared_variable
 !
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
@@ -130,6 +133,8 @@ module Equ
 !  For chemistry with LSODE
 !
       lchemonly=.false.
+      if(.not. associated(lrelativistic)) &
+        call get_shared_variable('lrelativistic',lrelativistic,default_val=.false.)
 
       if (l2davgfirst)  then
 !
@@ -1326,6 +1331,7 @@ module Equ
       use Polymer
       use Radiation
       use Selfgravity
+      use Sub, only: dot_mn,dot2_mn
       use Shear
       use Solid_Cells, only:  dsolid_dt
       use Special, only: dspecial_dt
@@ -1337,6 +1343,8 @@ module Equ
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       real, contiguous, dimension(:,:,:,:)   ,intent(INOUT) :: df
       type (pencil_case)                ,intent(INOUT) :: p
+      real, dimension (nx) :: vdota,a2,gap,rate
+      integer :: i
 
 !  hydro, density, and entropy evolution
 !  Note that pressure gradient is added in denergy_dt of noentropy to momentum,
@@ -1441,6 +1449,19 @@ module Equ
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 
         if (ltraining) call dtraining_dt(f,df)
+!
+!Make sure the timestep is small enough to prevent superluminal velocities
+!Done here to make sure all additions are added to duu
+!
+        if(lrelativistic .and. cdtsrc < 1.0) then
+          call dot_mn(p%uu, df(l1:l2,m,n,iux:iuz), vdota)
+          call dot2_mn(df(l1:l2,m,n,iux:iuz), a2)
+          gap  = max(1.-p%u2, tini)
+          rate = max(2.*max(vdota,0.)/gap, sqrt(a2/gap))
+          do i = 1,nx
+            if(p%u2(i) < (1+tini)*0.999999**2) maxsrc(i) = max(maxsrc(i), rate(i))
+          enddo
+        endif
 
     endsubroutine calc_all_rhs
 !***********************************************************************
