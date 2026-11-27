@@ -3005,11 +3005,12 @@ use Sub, only: dot2_mn
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
           endif
           if (lext_force) then
+            u_dot_ext_force = 0.0
             do i=1,3
               if (lu_background) then
-                u_dot_ext_force = p%uutot(:,i)*p%ext_force(:,i+1)
+                u_dot_ext_force = u_dot_ext_force + p%uutot(:,i)*p%ext_force(:,i+1)
               else
-                u_dot_ext_force = p%uu(:,i)*p%ext_force(:,i+1)
+                u_dot_ext_force = u_dot_ext_force + p%uu(:,i)*p%ext_force(:,i+1)
               endif
             enddo
           endif
