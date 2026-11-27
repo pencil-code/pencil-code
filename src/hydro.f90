@@ -429,6 +429,7 @@ module Hydro
   integer :: idiag_gamm=0       ! DIAG_DOC: $\left<gamma\right>$
   integer :: idiag_gam2m=0      ! DIAG_DOC: $\left<\gamma^2\right>$
   integer :: idiag_u2max=0      ! DIAG_DOC: $\max(uv^2)$
+  integer :: idiag_rvlim=0      ! DIAG_DOC: fraction of grid points with $|\uv|\ge$ max\_vel
   integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
   integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
   integer :: idiag_gam2min=0    ! DIAG_DOC: $\min(\gamma^2)$
@@ -3306,7 +3307,14 @@ module Hydro
 ! alberto: Diagnostic pencils for X-velocity, T00, T0i and Tij moments
       if (idiag_velxx2m/=0 .or. idiag_velxy2m/=0 .or. idiag_velxz2m/=0 .or. &
           idiag_velxrms/=0) lpenc_diagnos(i_velx)=.true.
-      if (idiag_T00m/=0) lpenc_diagnos(i_T00)=.true.
+      if (idiag_T00m/=0) then
+        if(lconservative) then
+          lpenc_diagnos(i_T00)=.true.
+        else
+         lpenc_diagnos(i_ekin)=.true.
+         lpenc_diagnos(i_rho)=.true.
+        endif
+      endif
       if (idiag_Txxm/=0 .or. idiag_Tyym/=0 .or. idiag_Tzzm/=0 .or. idiag_Txym/=0 .or. &
           idiag_Tyzm/=0 .or. idiag_Tzxm/=0) lpenc_diagnos(i_Tij)=.true.
       if (idiag_T0x2m/=0 .or. idiag_T0y2m/=0 .or. idiag_T0z2m/=0 &
@@ -5087,6 +5095,12 @@ module Hydro
           if (idiag_gamrms/=0) call sum_mn_name(lorr,idiag_gamrms,lsqrt=.true.)
           if (idiag_gammax/=0) call max_mn_name(lorr,idiag_gammax,lsqrt=.true.)
           if (idiag_gam2min/=0) call max_mn_name(-lorr,idiag_gam2min,lneg=.true.)
+        endif
+!
+!
+!
+        if (idiag_rvlim/=0) then
+          call sum_mn_name(merge(1.,0.,p%u2>=(1-tini)*max_vel**2),idiag_rvlim)
         endif
 !
 !
@@ -7360,6 +7374,7 @@ module Hydro
         idiag_gamm=0
         idiag_gam2m=0
         idiag_u2max=0
+        idiag_rvlim=0
         idiag_rat2=0
         idiag_gamrms=0
         idiag_gammax=0
@@ -7890,6 +7905,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'gamm',idiag_gamm)
         call parse_name(iname,cname(iname),cform(iname),'gam2m',idiag_gam2m)
         call parse_name(iname,cname(iname),cform(iname),'u2max', idiag_u2max)
+        call parse_name(iname,cname(iname),cform(iname),'rvlim', idiag_rvlim)
         call parse_name(iname,cname(iname),cform(iname),'rat2', idiag_rat2)
         call parse_name(iname,cname(iname),cform(iname),'gamrms',idiag_gamrms)
         call parse_name(iname,cname(iname),cform(iname),'gammax',idiag_gammax)
