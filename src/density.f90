@@ -3045,12 +3045,12 @@ use Sub, only: dot2_mn
                 density_hydro_rhs=cs20*density_hydro_rhs
               endif
               if (lext_force) then
-                density_hydro_rhs=density_hydro_rhs - p%rho1 * (p%ext_force(:,1) - &
+                density_hydro_rhs=density_hydro_rhs + p%rho1 * (p%ext_force(:,1) - &
                                           2*cs20/cs20p1 * u_dot_ext_force)
                 ! Hubble forcing if Hscript is given
                 ! alberto: for now only available if lext_force is true, but it can be generalized
                 if (Hscript /= 0.) then
-                  density_hydro_rhs=density_hydro_rhs + (3*cs20 - 1) * Hscript
+                  density_hydro_rhs=density_hydro_rhs - (3*cs20 - 1) * Hscript
                 endif
               endif
               density_hydro_rhs=density_hydro_rhs*prefactor*lorentz_gamma_inv2
