@@ -5726,6 +5726,7 @@ module Forcing
           if(lext_force) then
             do j=1,3
               p%ext_force(:,j+1) = p%ext_force(:,j+1) + p%fcont(:,j,i)
+              p%ext_force(:,1)   = p%ext_force(:,1)   + p%fcont(:,j,i)*p%uu(:,j)
             enddo
           endif
         enddo
