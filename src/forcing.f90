@@ -2028,10 +2028,13 @@ module Forcing
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      if(lrhs) then
-        fact=force_fact/ffnorm
+      if(dt == 0.) then 
+        fact = 0.
       else
-        fact=force_fact/ffnorm*sqrt(dt)
+        fact=force_fact/(ffnorm*sqrt(dt))
+        if(.not. lrhs) then
+          fact=fact*dt
+        endif
       endif
 !
 !  prefactor; treat real and imaginary parts separately (coef1 and coef2),
@@ -5643,7 +5646,7 @@ module Forcing
                 iforcing_cont(i)=='TG-random-hel') then
           call calc_TG_random(i)
         elseif(iforcing_cont(i) == 'helical') then
-          call compute_forcing_hel_coefficients(h_coeffs,.true.)
+          if(lfirst) call compute_forcing_hel_coefficients(h_coeffs,.true.)
 !
 !  By default, dtforce=0, so new forcing is applied at every time step.
 !  Alternatively, it can be set to any other time, so the forcing is
