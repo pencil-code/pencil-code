@@ -5097,7 +5097,7 @@ module Hydro
 !
 !
         if (idiag_rvlim/=0) then
-          call sum_mn_name(merge(1.,0.,p%u2>=(1-tini)*max_vel**2),idiag_rvlim)
+          call sum_mn_name(merge(1.,0.,p%u2>=0.9999*max_vel**2),idiag_rvlim)
         endif
 !
 !
