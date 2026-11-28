@@ -3458,8 +3458,18 @@ extern "C" void reloadConfig()
 /***********************************************************************************************/
 extern "C" void updateInConfigArr(int index)
 {
-     if (mesh.info[(AcRealArrayParam)index] != nullptr)
-        acDeviceLoadRealArray(acGridGetDevice(),STREAM_DEFAULT,mesh.info,static_cast<AcRealArrayParam>(index));
+//  Indices >= NUM_REAL_ARRAYS refer to complex arrays (see updateInConfigArrName).
+     if (index < NUM_REAL_ARRAYS)
+     {
+       if (mesh.info[(AcRealArrayParam)index] != nullptr)
+          acDeviceLoadRealArray(acGridGetDevice(),STREAM_DEFAULT,mesh.info,static_cast<AcRealArrayParam>(index));
+     }
+     else
+     {
+       const AcComplexArrayParam param = static_cast<AcComplexArrayParam>(index-NUM_REAL_ARRAYS);
+       if (mesh.info[param] != nullptr)
+          acDeviceLoadComplexArray(acGridGetDevice(),STREAM_DEFAULT,mesh.info,param);
+     }
 }
 /***********************************************************************************************/
 extern "C" void updateInConfigScal(int index, AcReal value)
@@ -3480,6 +3490,9 @@ extern "C" int updateInConfigArrName(char *name)
     int index = -1;
     for (int i=0; i<NUM_REAL_ARRAYS; i++){
        if (strcmp(get_array_info(static_cast<AcRealArrayParam>(i)).name,name)==0) index=i;
+    }
+    for (int i=0; i<NUM_COMPLEX_ARRAYS; i++){
+       if (strcmp(get_array_info(static_cast<AcComplexArrayParam>(i)).name,name)==0) index=NUM_REAL_ARRAYS+i;
     }
     if (index>-1) updateInConfigArr(index);
     else
