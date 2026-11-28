@@ -3411,6 +3411,7 @@ module Hydro
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_u2)=.true.
         lpenc_requested(i_ext_force)=.true.
+        if (.not.lconservative) lpenc_requested(i_rho1)=.true.
       endif
 !
     endsubroutine pencil_criteria_hydro
