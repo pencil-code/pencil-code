@@ -809,7 +809,6 @@ module Cdata
                                 ! PHIAVG_DOC: (useful for debugging)
   integer :: idiag_dtv=0        ! DIAG_DOC: advective timestep as a
                                 ! DIAG_DOC:   fraction of the actual one
-  integer :: idiag_dtvloc=0     ! DIAG_DOC: location of the maximal fraction of advective timestep to the actual one
   integer :: idiag_dtsrc=0      ! DIAG_DOC: timestep from a source term,
                                 ! DIAG_DOC:   fraction of the actual one
   integer :: idiag_dtdiffus=0   ! DIAG_DOC: diffusive timestep as a

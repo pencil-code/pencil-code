@@ -118,6 +118,13 @@ module Diagnostics
   integer :: ixav_max
   integer, dimension (:), allocatable :: maxranks
 !
+!  Location requests for extrema: iname_extr_loc(i)=j>0 means that for the extremum
+!  in slot i of print.in additionally its location is to be output, requested by
+!  the entry <name>loc in slot j (j=i if only the location was requested).
+!  Set generically by fparse_name, used by max_mn_name.
+!
+  integer, dimension (:), allocatable :: iname_extr_loc
+!
 ! Variables for Yin-Yang grid: z-averages.
 !
   real, dimension(:,:,:), allocatable :: fnamexy_cap
@@ -354,6 +361,7 @@ module Diagnostics
           if (mod(itype_name(iname),ilabel_extr_lim)==ilabel_max_dt) fname(iname)=dtdiagnos*fname(iname)
         enddo
 
+        if (lfirst_call) call check_location_requests
         call gen_form_legend(fform,legend)
 !
         if (ldebug) then
@@ -528,6 +536,54 @@ module Diagnostics
 
     endsubroutine report_undefined_diagnostics
 !***********************************************************************
+    subroutine strip_loc_suffix(name)
+!
+!  Removes the postfix 'loc' from location based maxima
+!
+!  28-nov-26/Claude: carved from gen_form_legend
+!
+      character(len=*), intent(inout) :: name
+!
+      integer :: indloc
+!
+      indloc=index(name,'(')
+      if (indloc==0) indloc=len_trim(name)+1
+      if (indloc>3) then
+        if (name(indloc-3:indloc-1)=='loc') name=name(1:indloc-4)//name(indloc:)
+      endif
+!
+    endsubroutine strip_loc_suffix
+!***********************************************************************
+    subroutine check_location_requests
+!
+!  Location requests <name>loc in print.in for diagnostics which are not extrema
+!  calculated by max_mn_name cannot be served: warn and drop them.
+!  Called on root at the first output, when itype_name is known.
+!
+!  28-nov-26/Claude: coded
+!
+      integer :: iname, iloc
+!
+      if (.not.allocated(iname_extr_loc)) return
+      do iname=1,nname
+        iloc=iname_extr_loc(iname)
+        if (iloc==0) cycle
+!
+!  Only sum-type diagnostics (itype_name>0) are known for sure not to be extrema;
+!  extrema may not yet have been calculated (itype_name=ilabel_save).
+!
+        if (itype_name(iname)<=0) cycle
+        call warning('prints','no location available for diagnostic '//trim(cname(iloc))//', ignored')
+        if (iloc==iname) then
+          call strip_loc_suffix(cname(iname))     ! only location asked for: output the plain diagnostic
+        else
+          itype_name(iloc)=ilabel_ignore          ! drop the separate location slot
+        endif
+        iname_extr_loc(iname)=0
+      enddo
+!
+    endsubroutine check_location_requests
+!***********************************************************************
     subroutine gen_form_legend(fform,legend)
 !
 !  19-aug-13/MR: outsourced from prints
@@ -544,7 +600,7 @@ module Diagnostics
       character(len=2048) :: tform
       logical             :: lcompl
       character(len=len(cform)) :: cform_loc,cform_ext
-      integer             :: iname,lenrank,lenloc,iname_loc,indloc
+      integer             :: iname,lenrank,lenloc,iname_loc
       character(len=4), dimension(4) :: addtexts
       logical             :: lindices, lloc
       integer, dimension(4) :: addlengths
@@ -577,12 +633,7 @@ module Diagnostics
 !
 ! Only the location of maxima was asked for: get rid of the 'loc' postfix.
 !
-                indloc=index(cname(iname),'(')
-                if (indloc==0) indloc=len_trim(cname(iname))+1
-                if (indloc>3) then
-                  if (cname(iname)(indloc-3:indloc-1)=='loc') &
-                    cname(iname)=cname(iname)(1:indloc-4)//cname(iname)(indloc:)
-                endif
+                call strip_loc_suffix(cname(iname))
               else
                 cform_ext = adjust_format(iname)
               endif
@@ -1593,6 +1644,7 @@ contains
 
       integer :: iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
       character(len=len(cform)) :: tmp
+      logical :: lloc
 !
 !  Check whether format is given.
 !
@@ -1608,21 +1660,54 @@ contains
         length=iform0-1
       endif
 !
+!  Generic location request for extrema: a print.in entry <ctest>loc asks for
+!  diagnostic <ctest> together with the location where the extremum occurs.
+!
+      lloc=.false.
+      if (length>3) then
+        if (cname(length-2:length)=='loc' .and. cname(1:length-3)==ctest) &
+          lloc=is_print_in_entry(iname,cname)
+      endif
+!
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
 !
-      if (cname(1:length)==ctest) then
+      if (cname(1:length)==ctest .or. lloc) then
         if (itest==0) then
-          if (iform1>0) then
-            cform=cname(iform1+1:iform2-1)
-          else
-            cform='1pE10.2'
-          endif
+!
+!  First occurrence; if it is a location request, the slot holds both extremum and location.
+!
           itest=iname
-          fparse_name=iname
+          if (lloc) iname_extr_loc(iname)=iname
+        elseif (lloc .and. is_print_in_entry(itest)) then
+!
+!  <ctest>loc after <ctest>: the extremum stays in slot itest, the location goes behind it.
+!
+          if (iname_extr_loc(itest)/=0) then
+            fparse_name=-1
+            return        ! location already requested
+          endif
+          iname_extr_loc(itest)=iname
+        elseif (.not.lloc .and. is_print_in_entry(iname,cname) .and. is_print_in_entry(itest)) then
+!
+!  <ctest> after <ctest>loc: move the extremum to the present slot.
+!
+          if (iname_extr_loc(itest)/=itest) then
+            fparse_name=-1
+            return        ! diagnostic already defined
+          endif
+          iname_extr_loc(itest)=0
+          iname_extr_loc(iname)=itest
+          itest=iname
         else
           fparse_name=-1
           return          ! diagnostic already defined
+        endif
+        fparse_name=iname
+        if (iform1>0) then
+          cform=cname(iform1+1:iform2-1)
+        else
+          cform='1pE10.2'
         endif
 
         if (scan(cform(1:1), 'eEdDgG')==1) then
@@ -1670,6 +1755,28 @@ contains
       call keep_compiler_quiet(ncomp)
 !
     endfunction fparse_name
+!***********************************************************************
+    logical function is_print_in_entry(iname,str)
+!
+!  True if iname is a valid slot of the print.in list (and, if str is present,
+!  str is the entry in this slot). Distinguishes print.in entries from those of
+!  other lists (averages etc.) which are parsed by the same fparse_name.
+!
+!  28-nov-26/Claude: coded
+!
+      integer, intent(in) :: iname
+      character(len=*), optional, intent(in) :: str
+!
+      is_print_in_entry=.false.
+      if (.not.(allocated(iname_extr_loc).and.allocated(cname))) return
+      if (iname<1 .or. iname>min(size(iname_extr_loc),size(cname))) return
+      if (present(str)) then
+        is_print_in_entry = cname(iname)==str
+      else
+        is_print_in_entry=.true.
+      endif
+!
+    endfunction is_print_in_entry
 !***********************************************************************
     subroutine parse_name_s(iname,cname,cform,ctest,itest,ncomp)
 !
@@ -2031,31 +2138,32 @@ contains
 !
     endsubroutine sum_name_int
 !***********************************************************************
-    subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal,mask,iname_loc)
+    subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal,mask)
 !
 !  Successively calculate maximum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
 !  Optional mask is conveyed to maxval/maxloc.
-!  Optional iname_loc>0 indicates that additionally the location of the maximum is requested.
+!  The location of the maximum is additionally recorded, if requested in print.in by
+!  <name>loc (see fparse_name).
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
 !  29-jun-12/MR: incorporated test for iname/=0
 !  29-apr-26/MR: added optional parameter iname_loc
+!  28-nov-26/TP: removed iname_loc: locations are now automatically parsed from <name>loc being present in print.in
 !
-      use General, only: ioptest,posindex_to_1Dindex
+      use General, only: posindex_to_1Dindex
 
       real, dimension (nx) :: a
       integer :: iname
       logical, optional :: lsqrt,l_dt,lneg,lreciprocal
       logical, dimension (nx), optional :: mask
-      integer, optional :: iname_loc
 !
       real :: newmax
       logical :: lchanged
       integer, dimension(1) :: max_loc
-      integer :: iname_loc_,itype
+      integer :: iname_loc,itype
 !
       if (iname==0) return
 !
@@ -2075,8 +2183,12 @@ contains
         endif
       endif
 
-      iname_loc_=ioptest(iname_loc)
-      if (iname_loc_/=0 .and. lchanged) then
+      if (allocated(iname_extr_loc)) then
+        iname_loc=iname_extr_loc(iname)
+      else
+        iname_loc=0
+      endif
+      if (iname_loc/=0 .and. lchanged) then
         if (present(mask)) then
           max_loc=maxloc(a,mask)
         else
@@ -2103,13 +2215,13 @@ contains
 !  Encode the index for the location diagnostic in the type.
 !  Done only with the final value to avoid race conditions
 !
-        itype_name(iname) = itype + ilabel_extr_lim*iname_loc_
-        if (iname_loc_/=0) then
+        itype_name(iname) = itype + ilabel_extr_lim*iname_loc
+        if (iname_loc/=0) then
 !
 !  If there is a separate extremum slot in fname, the location slot is ignored when finalizing the diagnostic.
 !  (If only the location was asked for, the name is adjusted in gen_form_legend.)
 !
-          if (iname_loc_/=iname) itype_name(iname_loc_)=ilabel_ignore
+          if (iname_loc/=iname) itype_name(iname_loc)=ilabel_ignore
         endif
       endif
 !
@@ -3531,6 +3643,11 @@ contains
       if (ldebug) print*, 'allocate_cnames: allocated memory for '// &
                           'itype_name with nname =', nnamel
       itype_name=ilabel_save
+!
+      if (allocated(iname_extr_loc)) deallocate(iname_extr_loc)
+      allocate(iname_extr_loc(nnamel),stat=stat)
+      if (stat>0) call fatal_error('allocate_cnames','Could not allocate iname_extr_loc')
+      iname_extr_loc=0
 
     endsubroutine
 !***********************************************************************
@@ -3940,6 +4057,7 @@ contains
       if (allocated(cname)) deallocate(cname)
       if (allocated(cform)) deallocate(cform)
       if (allocated(itype_name)) deallocate(itype_name)
+      if (allocated(iname_extr_loc)) deallocate(iname_extr_loc)
 !
     endsubroutine fnames_clean_up
 !***********************************************************************

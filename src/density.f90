@@ -273,8 +273,6 @@ module Density
   integer :: idiag_drhom=0      ! DIAG_DOC: $<\varrho-\varrho_0>$
   integer :: idiag_rhomin=0     ! DIAG_DOC: $\min(\rho)$
   integer :: idiag_rhomax=0     ! DIAG_DOC: $\max(\rho)$
-  integer :: idiag_rhominloc=0  ! DIAG_DOC: $location of \min(\rho)$
-  integer :: idiag_rhomaxloc=0  ! DIAG_DOC: $location of \max(\rho)$
   integer :: idiag_lnrhomin=0   ! DIAG_DOC: $\min(\log\rho)$
   integer :: idiag_lnrhomax=0   ! DIAG_DOC: $\max(\log\rho)$
   integer :: idiag_rhorms=0     ! DIAG_DOC: $\sqrt{<\varrho^2>}$
@@ -2380,6 +2378,9 @@ module Density
           lpenc_requested(i_transprho)=.true.
         else
           if (.not.lconservative) lpenc_requested(i_divu)=.true.
+!
+!  The force terms of the non-conservative relativistic equations use p%rho1.
+!
           if (.not.lconservative .and. lext_force) lpenc_requested(i_rho1)=.true.
           if (ldensity_nolog) then
             if (lconservative) then
@@ -2474,7 +2475,7 @@ module Density
       if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or.idiag_rho4m/=0 .or.idiag_rho6m/=0 .or. &
            idiag_rho8m/=0 .or. idiag_rho12m/=0 .or. idiag_rhof2m/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
-           idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhominloc/=0 .or. idiag_rhomaxloc/=0 .or. &
+           idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. &
            idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or. &
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
@@ -3656,8 +3657,8 @@ use Sub, only: dot2_mn
         endif
         call integrate_mn_name(unitpencil,idiag_vol)
 
-        if (idiag_rhomin/=0) call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.,iname_loc=idiag_rhominloc)
-        call max_mn_name(p%rho,idiag_rhomax,iname_loc=idiag_rhomaxloc)
+        if (idiag_rhomin/=0) call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
+        call max_mn_name(p%rho,idiag_rhomax)
 
         if (idiag_lnrhomin/=0) call max_mn_name(-p%lnrho,idiag_lnrhomin,lneg=.true.)
         call max_mn_name(p%lnrho,idiag_lnrhomax)
@@ -4200,7 +4201,7 @@ use Sub, only: dot2_mn
         idiag_rhof2m=0; idiag_lnrho2m=0
         idiag_drho2m=0; idiag_drhom=0; idiag_rhorms=0; idiag_lnrhorms=0
         idiag_ugrhom=0; idiag_ugrhomz=0; idiag_uglnrhom=0
-        idiag_rhomin=0; idiag_rhomax=0; idiag_rhominloc=0; idiag_rhomaxloc=0; idiag_dtd=0; idiag_dtd3=0
+        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0; idiag_dtd3=0
         idiag_lnrhomin=0; idiag_lnrhomax=0;
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
@@ -4235,8 +4236,6 @@ use Sub, only: dot2_mn
         call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
         call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
-        call parse_name(iname,cname(iname),cform(iname),'rhominloc',idiag_rhominloc)
-        call parse_name(iname,cname(iname),cform(iname),'rhomaxloc',idiag_rhomaxloc)
         call parse_name(iname,cname(iname),cform(iname),'lnrhomin',idiag_lnrhomin)
         call parse_name(iname,cname(iname),cform(iname),'lnrhomax',idiag_lnrhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
@@ -4260,8 +4259,6 @@ use Sub, only: dot2_mn
 !
 !  Enable extrema value output if only location is requested.
 !
-      if (idiag_rhomaxloc/=0.and.idiag_rhomax==0) idiag_rhomax=idiag_rhomaxloc
-      if (idiag_rhominloc/=0.and.idiag_rhomin==0) idiag_rhomin=idiag_rhominloc
 !
 !  Check for those quantities for which we want xy-averages.
 !

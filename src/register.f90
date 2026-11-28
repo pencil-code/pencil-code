@@ -1123,7 +1123,7 @@ module Register
         idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
         idiag_timeperstep=0; idiag_eps_rkf=0
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
-        idiag_dtv=0; idiag_dtvloc=0; idiag_dtsrc=0
+        idiag_dtv=0; idiag_dtsrc=0
         idiag_dtdiffus=0; idiag_dtdiffus2=0; idiag_dtdiffus3=0
         idiag_Rmesh=0; idiag_Rmesh3=0
         idiag_maxadvec=0; idiag_maxdiffus=0
@@ -1138,7 +1138,6 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'it',idiag_it)
         call parse_name(iname,cname(iname),cform(iname),'dt',idiag_dt)
         call parse_name(iname,cname(iname),cform(iname),'dtv',idiag_dtv)
-        call parse_name(iname,cname(iname),cform(iname),'dtvloc',idiag_dtvloc)
         call parse_name(iname,cname(iname),cform(iname),'dtsrc',idiag_dtsrc)
         call parse_name(iname,cname(iname),cform(iname),'dtdiffus',idiag_dtdiffus)
         call parse_name(iname,cname(iname),cform(iname),'dtdiffus2',idiag_dtdiffus2)
@@ -1154,7 +1153,6 @@ module Register
 !
 !  Enable extrema value output if only location is requested.
 !
-      if (idiag_dtvloc/=0.and.idiag_dtv==0) idiag_dtv=idiag_dtvloc
 !
 !  phi-averages
 !

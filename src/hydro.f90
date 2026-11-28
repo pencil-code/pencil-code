@@ -457,14 +457,10 @@ module Hydro
                                 ! DIAG_DOC: the hydro_zaver_range
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_fpresmax=0   ! DIAG_DOC: maximum of pressure gradient
-  integer :: idiag_fpresmaxloc=0! DIAG_DOC: location of \ldots
   integer :: idiag_fpresmin=0   ! DIAG_DOC: minimum of pressure gradient
-  integer :: idiag_fpresminloc=0! DIAG_DOC: location of \ldots
   integer :: idiag_fpresrms=0   ! DIAG_DOC: rms value of pressure gradient
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_umin=0       ! DIAG_DOC: $\min(|\uv|)$
-  integer :: idiag_umaxloc=0    ! DIAG_DOC: location of $\max(|\uv|)$
-  integer :: idiag_uminloc=0    ! DIAG_DOC: location of $\min(|\uv|)$
   integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
   integer :: idiag_uyrms=0      ! DIAG_DOC: $\left<u_y^2\right>^{1/2}$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
@@ -4873,8 +4869,8 @@ module Hydro
         endif
         if (idiag_urmsx/=0) call sum_mn_name(p%u2*xmask_hyd,idiag_urmsx,lsqrt=.true.)
         if (idiag_urmsz/=0) call sum_mn_name(p%u2*zmask_hyd(n-n1+1),idiag_urmsz,lsqrt=.true.)
-        call max_mn_name(p%u2,idiag_umax,lsqrt=.true.,iname_loc=idiag_umaxloc)
-        if (idiag_umin /=0) call max_mn_name(-sqrt(p%u2),idiag_umin,lneg=.true.,iname_loc=idiag_uminloc)
+        call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
+        if (idiag_umin /=0) call max_mn_name(-sqrt(p%u2),idiag_umin,lneg=.true.)
         if (idiag_uxrms/=0) call sum_mn_name(p%uu(:,1)**2,idiag_uxrms,lsqrt=.true.)
         if (idiag_uyrms/=0) call sum_mn_name(p%uu(:,2)**2,idiag_uyrms,lsqrt=.true.)
         if (idiag_uzrms/=0) call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
@@ -5343,11 +5339,11 @@ module Hydro
         endif
         if(idiag_fpresmax/=0) then
           call max_mn_name(sqrt(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3)),&
-                           idiag_fpresmax,iname_loc=idiag_fpresmaxloc)
+                           idiag_fpresmax)
         endif
         if(idiag_fpresmin/=0) then
           call max_mn_name(-sqrt(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3)),&
-                           idiag_fpresmin,lneg=.true.,iname_loc=idiag_fpresminloc)
+                           idiag_fpresmin,lneg=.true.)
         endif
         if(idiag_fpresrms/=0) then
           call sum_mn_name(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3),&
@@ -7395,18 +7391,12 @@ module Hydro
         idiag_urms=0
         idiag_durms=0
         idiag_fpresmax=0
-        idiag_fpresmaxloc=0
         idiag_fpresmin=0
-        idiag_fpresminloc=0
         idiag_fpresrms=0
-        idiag_uminloc=0
-        idiag_umaxloc=0
         idiag_urmsx=0
         idiag_urmsz=0
         idiag_umax=0
         idiag_umin=0
-        idiag_umaxloc=0
-        idiag_uminloc=0
         idiag_uxrms=0
         idiag_uyrms=0
         idiag_uzrms=0
@@ -7937,9 +7927,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'durms',idiag_durms)
         call parse_name(iname,cname(iname),cform(iname),'fpresmax',idiag_fpresmax)
-        call parse_name(iname,cname(iname),cform(iname),'fpresmaxloc',idiag_fpresmaxloc)
         call parse_name(iname,cname(iname),cform(iname),'fpresmin',idiag_fpresmin)
-        call parse_name(iname,cname(iname),cform(iname),'fpresminloc',idiag_fpresminloc)
         call parse_name(iname,cname(iname),cform(iname),'fpresrms',idiag_fpresrms)
         call parse_name(iname,cname(iname),cform(iname),'urmsx',idiag_urmsx)
         call parse_name(iname,cname(iname),cform(iname),'urmsz',idiag_urmsz)
@@ -7947,8 +7935,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'urmss',idiag_urmss)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
         call parse_name(iname,cname(iname),cform(iname),'umin',idiag_umin)
-        call parse_name(iname,cname(iname),cform(iname),'umaxloc',idiag_umaxloc)
-        call parse_name(iname,cname(iname),cform(iname),'uminloc',idiag_uminloc)
         call parse_name(iname,cname(iname),cform(iname),'uxmin',idiag_uxmin)
         call parse_name(iname,cname(iname),cform(iname),'uymin',idiag_uymin)
         call parse_name(iname,cname(iname),cform(iname),'uzmin',idiag_uzmin)
@@ -8138,11 +8124,7 @@ module Hydro
 !
 !  Enable extrema value output if only location is requested.
 !
-      if (idiag_umaxloc/=0.and.idiag_umax==0) idiag_umax=idiag_umaxloc
-      if (idiag_uminloc/=0.and.idiag_umin==0) idiag_umin=idiag_uminloc
 
-      if (idiag_fpresmaxloc/=0.and.idiag_fpresmax==0) idiag_fpresmax=idiag_fpresmaxloc
-      if (idiag_fpresminloc/=0.and.idiag_fpresmin==0) idiag_fpresmin=idiag_fpresminloc
 !
       if (idiag_u2tm/=0) then
         if (iuut==0) call fatal_error("rprint_hydro","Cannot calculate u2tm if iuut==0")
