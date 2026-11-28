@@ -9797,53 +9797,78 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
   
     endfunction get_dxyzs
 !***********************************************************************    
-    subroutine check_for_nans_globally(f,caller)
-
-      use Mpicomm, only: mpireduce_max_int,mpiabort
-      use General, only: notanumber
+    subroutine check_for_nans_globally(f,caller,lfound)
+!
+!  Checks f for NaNs.
+!  If lfound is not present, each process reports its own NaNs and all
+!  processes are aborted when NaNs are found on any of them.
+!  If lfound is present, the per-slot results are reduced over all processes
+!  (collective call!), only root reports, and the result is returned in lfound,
+!  so that the caller can do an orderly shutdown.
+!
+      use Mpicomm, only: mpiabort,mpiallreduce_or
       use FarrayManager,  only: farray_get_name
       use, intrinsic :: iso_fortran_env, only: output_unit
       use, intrinsic :: ieee_arithmetic,only: ieee_is_nan
 
-
       real, contiguous, dimension(:,:,:,:) :: f
       character (len=*), optional :: caller
-      logical :: has_nan_local,found_nan_in_field
-      integer :: i
-      integer :: l,m,n
-      character(len=30) :: name
+      logical, optional, intent(out) :: lfound
+      logical, dimension(mfarray) :: lnan_slot
+      logical :: lreport
+      integer :: i, j, ifirst, ncomp
+      character(len=30) :: name, base
 
-      !Might as well check only locally and then call mpiabort to exit globally
-      !saves some communication and is maybe a bit simpler
-      has_nan_local = .false.
       do i=1,mfarray
-        name = farray_get_name(i)
-        found_nan_in_field=.false.
-        do l=1,mx
-        do m=1,my
-        do n=1,mz
-          if (ieee_is_nan(f(l,m,n,i))) then
-            found_nan_in_field=.true.
-            has_nan_local = .true.
-          endif
-        enddo
-        enddo
-        enddo
-        if(found_nan_in_field) then
-          print*,"check_for_nans_globally: nan in Field: ",trim(name)
-          flush(output_unit)
-        endif
+        lnan_slot(i) = any(ieee_is_nan(f(:,:,:,i)))
       enddo
 
-      if(has_nan_local) then
-        if (.not. present(caller)) then
-          print*,"check_for_nans_globally: found nans!"
-        else
-          print*,"check_for_nans_globally: found nans: "//trim(caller)//" !"
-        endif
-        flush(output_unit)
-        call mpiabort
+      if (present(lfound)) then
+        call mpiallreduce_or(lnan_slot,mfarray)
+        lfound = any(lnan_slot)
+        lreport = lroot .and. lfound
+      else
+        lreport = any(lnan_slot)
       endif
+      if (.not. lreport) return
+!
+!  Only the first slot of a vector/tensor carries a name. Group the following
+!  unnamed slots with it; 3-component vectors are reported as e.g. ux,uy,uz
+!  (a doubled name like uu or aa is reduced to its first letter).
+!
+      i = 1
+      do while (i <= mfarray)
+        ifirst = i
+        name = farray_get_name(ifirst)
+        i = i+1
+        do while (i <= mfarray)
+          if (farray_get_name(i) /= '') exit
+          i = i+1
+        enddo
+        ncomp = i-ifirst
+        base = name
+        if (len_trim(name)==2) then
+          if (name(1:1)==name(2:2)) base = name(1:1)
+        endif
+        do j=1,ncomp
+          if (.not. lnan_slot(ifirst+j-1)) cycle
+          if (ncomp==1) then
+            print'(a,i4,a)', ' check_for_nans_globally: nan in f-array slot ',ifirst,': '//trim(name)
+          elseif (ncomp==3) then
+            print'(a,i4,a)', ' check_for_nans_globally: nan in f-array slot ',ifirst+j-1,': '//trim(base)//cvec(j)
+          else
+            print'(a,i4,a,i2,a)', ' check_for_nans_globally: nan in f-array slot ',ifirst+j-1,': '// &
+                                  trim(name)//' (component ',j,')'
+          endif
+        enddo
+      enddo
+      if (.not. present(caller)) then
+        print*,"check_for_nans_globally: found nans!"
+      else
+        print*,"check_for_nans_globally: found nans: "//trim(caller)//" !"
+      endif
+      flush(output_unit)
+      if (.not. present(lfound)) call mpiabort
 
     endsubroutine check_for_nans_globally
 !***********************************************************************

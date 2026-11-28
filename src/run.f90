@@ -74,6 +74,7 @@ subroutine helper_loop(f)
   real :: tvar1
 
   real :: start_time,end_time
+  logical :: lnans
 !
 ! 7-feb-24/TP: coded
     call allocate_fnames(nname)
@@ -81,7 +82,27 @@ subroutine helper_loop(f)
 !
 !$  do while(lhelper_run)
 !$    call signal_wait(lhelper_perf,lhelper_run)
-      call check_for_nans_globally(f,'after reading from the GPU')
+!
+!  If NaNs are found (on any process), do not produce any output from the
+!  corrupted data. Instead, tell the master thread to stop the run, release the
+!  lock and wait for the master to send the final exit signal.
+!  The check is collective over the helpers of all processes, so they all
+!  skip the (collective) diagnostics consistently.
+!
+!  Once NaNs have been found (the same wake-up on all processes), the helper
+!  only idles until the master stops; the check is not repeated.
+!
+!$    if (lhelper_run) then
+        lnans = .false.
+!$      lnans = lhelper_found_nans
+        if (.not. lnans) call check_for_nans_globally(f,'after reading from the GPU',lnans)
+        if (lnans) then
+!$        lhelper_found_nans = .true.
+!$        lhelperflags = .false.
+!$        call signal_send(lhelper_perf,.false.)
+!$        cycle
+        endif
+!$    endif
       start_time = real(mpiwtime())
 !$    if (lhelper_run) call fetch_diagnostic_controls
 
@@ -747,6 +768,24 @@ endsubroutine helper_loop
 !
     it=it+1
     headt=.false.
+!
+!  Stop if the helper found NaNs in the data copied from the GPU.
+!  If lfarray_copied is set, the master waited in copy_farray_from_GPU for the
+!  helper to finish its previous task, and the helper is idle since then.
+!  Hence lhelper_found_nans is final here, and since the helpers reduce the NaN
+!  check over all processes, the decision is the same on all processes.
+!  No snapshot is written from the corrupted data, but crash.dat (as for a too short dt).
+!
+!$  if (lfarray_copied .and. lhelper_found_nans) then
+!$    if (lroot) then
+!$      print*
+!$      print*, 'Found NaNs in the f-array copied from the GPU, stopping the run'
+!$      call system_cmd("echo FOUND NANS > FOUND_NANS")
+!$    endif
+!$    save_lastsnap=.false.
+!$    call signal_helper_and_release_lock
+!$    exit Time_loop
+!$  endif
 
 !$  call signal_helper_and_release_lock
 

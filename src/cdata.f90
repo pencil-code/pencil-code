@@ -1097,6 +1097,7 @@ module Cdata
   integer :: num_helper_threads=1, thread_id=1
   integer, dimension(max_threads_possible) :: core_ids
 !$ logical, volatile :: lhelper_run=.true., lhelper_perf
+!$ logical, volatile :: lhelper_found_nans=.false.  ! set by the helper, read by the master to stop the run
 !$ logical :: loffload=.false.
 !$ integer :: ngpus=0
 !
