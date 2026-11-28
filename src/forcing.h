@@ -8,6 +8,7 @@
   public :: addforce
   public :: calc_diagnostics_forcing
   public :: forcing_after_boundary   !,forcing_continuous
+  public :: load_variables_to_gpu_forcing
   public :: lhydro_forcing, ltestflow_forcing
   
   public :: pencil_criteria_forcing, pencil_interdep_forcing

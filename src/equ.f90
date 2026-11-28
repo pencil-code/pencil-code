@@ -447,11 +447,13 @@ module Equ
       use GPU, only: update_on_gpu
       use Special, only: load_variables_to_gpu_special
       use Hydro, only: load_variables_to_gpu_hydro
+      use Forcing, only: load_variables_to_gpu_forcing
 
       integer, save :: dt_beta_ts_index = -1
 
       if (lspecial) call load_variables_to_gpu_special
       if (lhydro)   call load_variables_to_gpu_hydro
+      if (lforcing) call load_variables_to_gpu_forcing
       !    Need to load it on the first substep where it is wrong!
       !    and the correct one after dt is calculated to be in sync with the CPU
       !    This because we want to recreate the buggy behaviour in the short-stopping time approximation

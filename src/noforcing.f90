@@ -64,6 +64,12 @@ module Forcing
 !
     endsubroutine forcing_after_boundary
 !***********************************************************************
+    subroutine load_variables_to_gpu_forcing
+!
+!  Dummy routine
+!
+    endsubroutine load_variables_to_gpu_forcing
+!***********************************************************************
     subroutine pencil_criteria_forcing
 !
 !  Dummy routine

@@ -1338,7 +1338,6 @@ module Forcing
       where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
 !
       if (r_ff /=0. .or. rcyl_ff/=0.) profz_k = tanh(z/width_ff)
-
 !
     endsubroutine initialize_forcing
 !***********************************************************************
@@ -2028,13 +2027,11 @@ module Forcing
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      if(dt == 0.) then 
-        fact = 0.
+      if(dt == 0.) then
+        fact=0.
       else
         fact=force_fact/(ffnorm*sqrt(dt))
-        if(.not. lrhs) then
-          fact=fact*dt
-        endif
+        if(.not. lrhs) fact=fact*dt
       endif
 !
 !  prefactor; treat real and imaginary parts separately (coef1 and coef2),
@@ -5608,6 +5605,65 @@ module Forcing
 
     endsubroutine forcing_after_boundary
 !***********************************************************************
+    subroutine load_variables_to_gpu_forcing
+!
+!  On the GPU, after_boundary is not executed on the host, so the parameters of
+!  the continuous forcing that change at every substep are recomputed here (as
+!  forcing_after_boundary does on the CPU) and uploaded to the device.
+!  Called once per substep from load_variables_to_gpu (equ.f90).
+!
+!  28-nov-26/Claude: coded
+!
+      use GPU, only: update_on_gpu, update_on_gpu_vec
+!
+      integer, parameter :: narr=12
+      character(len=*), parameter :: pre='AC_h_coeffs_', post='__mod__forcing'
+!
+!  x-, y- and z-dependent factors (complex arrays): base set, outphasing set (dtforce/=0),
+!  second forcing function (lforcing_coefs_hel_double or lmhd_forcing) and its outphasing set.
+!
+      character(len=7), dimension(narr), parameter :: arr_names = (/ &
+        'fx     ','fy     ','fz     ','fx_old ','fy_old ','fz_old ', &
+        'fx2    ','fy2    ','fz2    ','fx2_old','fy2_old','fz2_old' /)
+      integer, dimension(narr), save :: arr_ind=-1
+      integer, dimension(9), save :: vec_ind=-1
+      integer, save :: pforce_ind=-1, qforce_ind=-1
+      logical :: lold, lsecond
+      integer :: i
+!
+      if (.not.(lgpu .and. lforcing_cont)) return
+!
+      call forcing_cont_after_boundary
+!
+      if (any(iforcing_cont=='helical')) then
+!
+!  Upload only the coefficient sets that are actually used.
+!
+        lold=dtforce/=0.
+        lsecond=lforcing_coefs_hel_double.or.lmhd_forcing
+        do i=1,narr
+          if (i>3.and.i<=6.and..not.lold) cycle
+          if (i>6.and.i<=9.and..not.lsecond) cycle
+          if (i>9.and..not.(lsecond.and.lold)) cycle
+          call update_on_gpu(arr_ind(i),pre//trim(arr_names(i))//post)
+        enddo
+        call update_on_gpu_vec(vec_ind(1),'AC_h_coeffs_coef1__mod__forcing',h_coeffs%coef1)
+        call update_on_gpu_vec(vec_ind(2),'AC_h_coeffs_coef2__mod__forcing',h_coeffs%coef2)
+        call update_on_gpu_vec(vec_ind(3),'AC_h_coeffs_coef3__mod__forcing',h_coeffs%coef3)
+        call update_on_gpu_vec(vec_ind(4),'AC_h_coeffs_fda__mod__forcing',h_coeffs%fda)
+        if (lold) call update_on_gpu_vec(vec_ind(5),'AC_h_coeffs_fda_old__mod__forcing',h_coeffs%fda_old)
+        if (lsecond) then
+          call update_on_gpu_vec(vec_ind(6),'AC_h_coeffs_coef1b__mod__forcing',h_coeffs%coef1b)
+          call update_on_gpu_vec(vec_ind(7),'AC_h_coeffs_coef2b__mod__forcing',h_coeffs%coef2b)
+          call update_on_gpu_vec(vec_ind(8),'AC_h_coeffs_fda2__mod__forcing',h_coeffs%fda2)
+          if (lold) call update_on_gpu_vec(vec_ind(9),'AC_h_coeffs_fda2_old__mod__forcing',h_coeffs%fda2_old)
+        endif
+        call update_on_gpu(pforce_ind,'AC_h_coeffs_pforce__mod__forcing',h_coeffs%pforce)
+        call update_on_gpu(qforce_ind,'AC_h_coeffs_qforce__mod__forcing',h_coeffs%qforce)
+      endif
+!
+    endsubroutine load_variables_to_gpu_forcing
+!***********************************************************************
     subroutine forcing_cont_after_boundary
 !
 !  precalculate parameters that are new at each timestep,
@@ -6770,7 +6826,7 @@ module Forcing
     use Syscalls, only: copy_addr, copy_addr_dble
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=100
+    integer, parameter :: n_pars=150
     integer :: i
     integer(KIND=ikind8), dimension(n_pars) :: p_par
     logical, dimension(2), save :: lforce_helical
@@ -6878,6 +6934,42 @@ module Forcing
     call copy_addr(lforce_ramp_down,p_par(87)) ! bool
     call copy_addr_dble(tforce_ramp_down,p_par(88)) ! dble dconst
     call copy_addr_dble(tauforce_ramp_down,p_par(89)) ! dble dconst
+    call copy_addr(h_coeffs%fx,p_par(90)) ! complex (mx)
+    call copy_addr(h_coeffs%fy,p_par(91)) ! complex (my)
+    call copy_addr(h_coeffs%fz,p_par(92)) ! complex (mz)
+    call copy_addr(h_coeffs%fx_old,p_par(93)) ! complex (mx)
+    call copy_addr(h_coeffs%fy_old,p_par(94)) ! complex (my)
+    call copy_addr(h_coeffs%fz_old,p_par(95)) ! complex (mz)
+    call copy_addr(h_coeffs%fx2,p_par(96)) ! complex (mx)
+    call copy_addr(h_coeffs%fy2,p_par(97)) ! complex (my)
+    call copy_addr(h_coeffs%fz2,p_par(98)) ! complex (mz)
+    call copy_addr(h_coeffs%fx2_old,p_par(99)) ! complex (mx)
+    call copy_addr(h_coeffs%fy2_old,p_par(100)) ! complex (my)
+    call copy_addr(h_coeffs%fz2_old,p_par(101)) ! complex (mz)
+    call copy_addr(h_coeffs%coef1,p_par(102)) ! real3 dconst
+    call copy_addr(h_coeffs%coef2,p_par(103)) ! real3 dconst
+    call copy_addr(h_coeffs%coef3,p_par(104)) ! real3 dconst
+    call copy_addr(h_coeffs%coef1b,p_par(105)) ! real3 dconst
+    call copy_addr(h_coeffs%coef2b,p_par(106)) ! real3 dconst
+    call copy_addr(h_coeffs%coef3b,p_par(107)) ! real3 dconst
+    call copy_addr(h_coeffs%fda,p_par(108)) ! real3 dconst
+    call copy_addr(h_coeffs%fda2,p_par(109)) ! real3 dconst
+    call copy_addr(h_coeffs%fda_old,p_par(110)) ! real3 dconst
+    call copy_addr(h_coeffs%fda2_old,p_par(111)) ! real3 dconst
+    call copy_addr(h_coeffs%pforce,p_par(112)) ! real dconst
+    call copy_addr(h_coeffs%qforce,p_par(113)) ! real dconst
+    call copy_addr(work_ff,p_par(114))
+    call copy_addr(max_force,p_par(115))
+    call copy_addr(qdouble_profile,p_par(116)) ! (mz)
+    call copy_addr(force,p_par(117))
+    call copy_addr(lwork_ff,p_par(118)) ! bool
+    call copy_addr(lmhd_forcing,p_par(119)) ! bool
+    call copy_addr(lforcing_coefs_hel_double,p_par(120)) ! bool
+    call copy_addr(lforce_always_all_compomemts,p_par(121)) ! bool
+    call copy_addr(lforcing2_same,p_par(122)) ! bool
+    call copy_addr(lforcing2_curl,p_par(123)) ! bool
+    call copy_addr(lconservative_hydro,p_par(124)) ! bool
+    call copy_addr(ifff,p_par(125)) ! int
 
     call keep_compiler_quiet(x1_fcont)
     call keep_compiler_quiet(x2_fcont)
