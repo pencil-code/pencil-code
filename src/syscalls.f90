@@ -40,6 +40,7 @@ module Syscalls
     module procedure copy_addr_log_1D
     module procedure copy_addr_real
     module procedure copy_addr_real_1D
+    module procedure copy_addr_cmplx_1D
     module procedure copy_addr_real_2D
     module procedure copy_addr_real_3D
     module procedure copy_addr_real_4D
@@ -401,6 +402,15 @@ module Syscalls
     call copy_addr_c(var,caddr)
 
     endsubroutine copy_addr_real_1D
+!***********************************************************************
+    subroutine copy_addr_cmplx_1D(var, caddr)
+
+    complex, dimension(:), intent(IN) :: var
+    integer(KIND=ikind8), intent(OUT) :: caddr
+
+    call copy_addr_c(var,caddr)
+
+    endsubroutine copy_addr_cmplx_1D
 !***********************************************************************
     subroutine copy_addr_log_1D(var, caddr)
 
