@@ -2380,6 +2380,7 @@ module Density
           lpenc_requested(i_transprho)=.true.
         else
           if (.not.lconservative) lpenc_requested(i_divu)=.true.
+          if (.not.lconservative .and. lext_force) lpenc_requested(i_rho1)=.true.
           if (ldensity_nolog) then
             if (lconservative) then
               if (lhydro) lpenc_requested(i_divss)=.true.
